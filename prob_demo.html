@@ -356,12 +356,10 @@
 </div>
 
 <script>
-/* ============ 授業モード（節ごとの表示） ============
-   授業前・授業中は RELEASED = false にしておく。このとき URL に ?upto=節番号 を付けると，その節までを表示する
-   （例: prob_demo.html?upto=2）。付けないときは導入だけを表示する。
-   授業が終わったら true にすると，URL に関係なく全体を表示する（復習用）。 */
-const RELEASED = false;
-/* URL に ?upto= が付いているときは授業用の表示にする（予想は Zoom のクイズで答えるので，選択肢を隠して解説を開いておく） */
+/* ============ 授業モード ============
+   URL に ?upto=節番号 を付けると授業用の表示になる（例: prob_demo.html?upto=2）。
+   その節までだけを表示し，予想は Zoom のクイズで答えるので，選択肢を隠して解説を開いておく。
+   付けないときは全体を表示し，選択肢を選ぶと解説が開く（自習・復習用）。 */
 const CLASS_MODE = /[?&]upto=\d+/.test(location.search);
 
 "use strict";
@@ -943,15 +941,16 @@ eTTable(); eTDraw();
 
 /* ============ 授業モード: ?upto=節番号 までの節だけを表示する ============ */
 (function () {
-  if (RELEASED) return;
-  const m = /[?&]upto=(\d+)/.exec(location.search), upto = m ? parseInt(m[1], 10) : -1;
+  const m = /[?&]upto=(\d+)/.exec(location.search);
+  if (!m) return;
+  const upto = parseInt(m[1], 10);
   const wrap = document.querySelector(".wrap");
   let sec = -Infinity, hidden = 0, target = null;
   Array.prototype.forEach.call(wrap.children, function (el) {
     if (el.tagName === "H2") { const n = parseInt(el.textContent, 10); if (!isNaN(n)) { sec = n; if (n === upto) target = el; } }
     if (sec > upto) { el.style.display = "none"; hidden++; }
   });
-  if (hidden) wrap.insertAdjacentHTML("beforeend", "<div class='gate'>この先は，授業の進行に合わせて表示されます。<br>授業のあとに，全体を復習用に公開します。</div>");
+  if (hidden) wrap.insertAdjacentHTML("beforeend", "<div class='gate'>この先は，授業の進行に合わせて表示されます。</div>");
   if (target) setTimeout(function () { target.scrollIntoView(); }, 0);
 })();
 </script>
