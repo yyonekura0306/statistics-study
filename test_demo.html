@@ -44,6 +44,7 @@
   .predict .mypick { color:#8a6d00; font-size:.92rem; min-height:1.2em; }
   .predict .howto { font-size:.92rem; margin:6px 0 0; padding:6px 10px; background:#fff; border:1px dashed #e8cf7d; border-radius:6px; }
   .predict .howto b { color:#8a6d00; }
+  .gate { margin:28px 0; padding:14px 16px; border:1px dashed #bbb; border-radius:8px; background:#fafafa; color:#666; text-align:center; }
   .predict details { margin-top:6px; }
   .predict summary { cursor:pointer; color:var(--blue); font-weight:600; font-size:.95rem; }
   .predict details p { margin:6px 0 2px; font-size:.95rem; }
@@ -451,6 +452,12 @@
 </div>
 
 <script>
+/* ============ 授業モード（節ごとの表示） ============
+   授業前・授業中は RELEASED = false にしておく。このとき URL に ?upto=節番号 を付けると，その節までを表示する
+   （例: prob_demo.html?upto=2）。付けないときは導入だけを表示する。
+   授業が終わったら true にすると，URL に関係なく全体を表示する（復習用）。 */
+const RELEASED = false;
+
 "use strict";
 
 /* ============ クリッカー連携の設定（任意） ============ */
@@ -984,6 +991,20 @@ pDraw();
 vDraw();
 ciDraw();
 $("eNRange").value = 2; eDraw();
+
+/* ============ 授業モード: ?upto=節番号 までの節だけを表示する ============ */
+(function () {
+  if (RELEASED) return;
+  const m = /[?&]upto=(\d+)/.exec(location.search), upto = m ? parseInt(m[1], 10) : -1;
+  const wrap = document.querySelector(".wrap");
+  let sec = -Infinity, hidden = 0, target = null;
+  Array.prototype.forEach.call(wrap.children, function (el) {
+    if (el.tagName === "H2") { const n = parseInt(el.textContent, 10); if (!isNaN(n)) { sec = n; if (n === upto) target = el; } }
+    if (sec > upto) { el.style.display = "none"; hidden++; }
+  });
+  if (hidden) wrap.insertAdjacentHTML("beforeend", "<div class='gate'>この先は，授業の進行に合わせて表示されます。<br>授業のあとに，全体を復習用に公開します。</div>");
+  if (target) setTimeout(function () { target.scrollIntoView(); }, 0);
+})();
 </script>
 </body>
 </html>
