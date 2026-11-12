@@ -457,6 +457,8 @@
    （例: prob_demo.html?upto=2）。付けないときは導入だけを表示する。
    授業が終わったら true にすると，URL に関係なく全体を表示する（復習用）。 */
 const RELEASED = false;
+/* URL に ?upto= が付いているときは授業用の表示にする（予想は Zoom のクイズで答えるので，選択肢を隠して解説を開いておく） */
+const CLASS_MODE = /[?&]upto=\d+/.test(location.search);
 
 "use strict";
 
@@ -955,7 +957,14 @@ function wirePredicts() {
   Object.keys(CLICKER).forEach(function (q) {
     const radios = document.querySelectorAll('input[name="' + q + '"]');
     const pick = document.getElementById(q + "pick");
-    /* 予想を選ぶまで解説を開けないようにする */
+    if (CLASS_MODE) {
+      const box = pick.closest(".predict"), opts = box.querySelector(".opts"), d0 = box.querySelector("details");
+      if (opts) opts.style.display = "none";
+      pick.style.display = "none";
+      if (d0) { d0.open = true; d0.querySelector("summary").textContent = "解説"; }
+      return;
+    }
+    /* 予想を選ぶまで解説を開けないようにする（復習用の表示） */
     const det = pick.closest(".predict").querySelector("details"), sum = det ? det.querySelector("summary") : null;
     const orig = sum ? sum.textContent : "";
     function unlock() { if (det && det.classList.contains("locked")) { det.classList.remove("locked"); sum.textContent = orig; } }
