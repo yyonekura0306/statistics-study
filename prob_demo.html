@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>確率分布の応用</title>
+<style>
+  :root { --blue:#2b6cb0; --gray:#8a8a8a; --red:#d13438; --orange:#d9a400; --bg:#ffffff; --fg:#1a1a1a; --muted:#666; --line:#ddd; --panel:#f6f7f9; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Segoe UI","Hiragino Sans","Meiryo",system-ui,sans-serif; color:var(--fg); background:var(--bg); line-height:1.75; }
+  .wrap { max-width:860px; margin:0 auto; padding:24px 20px 90px; }
+  h1 { font-size:1.6rem; margin:0 0 4px; }
+  h2 { font-size:1.28rem; margin:46px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--line); }
+  h3 { font-size:1.08rem; margin:32px 0 8px; }
+  p { margin:10px 0; }
+  .note { background:var(--panel); border-left:4px solid var(--blue); padding:12px 16px; border-radius:4px; color:#333; font-size:.95rem; }
+  .controls { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin:14px 0; }
+  .row { display:flex; align-items:center; gap:12px; margin:10px 0; flex-wrap:wrap; }
+  .row label.name { min-width:150px; font-weight:600; font-size:.95rem; }
+  input[type=range] { flex:1; min-width:160px; accent-color:var(--blue); }
+  .stepper { display:inline-flex; align-items:center; gap:6px; }
+  .stepper button { width:34px; height:34px; padding:0; font-size:1.2rem; line-height:1; background:#fff; color:var(--blue); border:1px solid var(--blue); border-radius:6px; cursor:pointer; }
+  .stepper button:hover { background:var(--blue); color:#fff; }
+  .stepper input[type=number], input.numin { width:82px; height:34px; text-align:center; font-size:1rem; font-variant-numeric:tabular-nums; border:1px solid #bbb; border-radius:6px; }
+  button.roll, button.nav { background:var(--blue); color:#fff; border:none; border-radius:6px; padding:9px 18px; font-size:.95rem; cursor:pointer; }
+  button.roll:hover, button.nav:hover { background:#255a97; }
+  button.nav { padding:7px 14px; }
+  button.preset { background:#fff; color:var(--blue); border:1px solid var(--blue); border-radius:6px; padding:5px 12px; font-size:.9rem; cursor:pointer; }
+  button.preset:hover { background:var(--blue); color:#fff; }
+  .radio { display:inline-flex; gap:16px; flex-wrap:wrap; }
+  .radio label { cursor:pointer; }
+  canvas { display:block; max-width:100%; margin:6px 0; }
+  .readout { font-size:.98rem; margin:10px 0 4px; }
+  .readout b { color:var(--blue); }
+  .caption { color:var(--muted); font-size:.9rem; margin:14px 0 2px; }
+  table.roster { border-collapse:collapse; margin:10px 0; font-size:.93rem; width:100%; }
+  table.roster th, table.roster td { border:1px solid var(--line); padding:5px 10px; text-align:right; font-variant-numeric:tabular-nums; }
+  table.roster th { background:var(--panel); text-align:center; font-weight:600; }
+  table.roster td.c { text-align:center; }
+  .predict { background:#fff8e7; border:1px solid #e8cf7d; border-left:4px solid #d9a400; border-radius:8px; padding:12px 16px; margin:16px 0; }
+  .predict .q { font-weight:600; }
+  .predict .opts { display:flex; flex-direction:column; gap:2px; margin:6px 0; }
+  .predict .opts label { cursor:pointer; }
+  .predict .mypick { color:#8a6d00; font-size:.92rem; min-height:1.2em; }
+  .predict .howto { font-size:.92rem; margin:6px 0 0; padding:6px 10px; background:#fff; border:1px dashed #e8cf7d; border-radius:6px; }
+  .predict .howto b { color:#8a6d00; }
+  .predict details { margin-top:6px; }
+  .predict summary { cursor:pointer; color:var(--blue); font-weight:600; font-size:.95rem; }
+  .predict details p { margin:6px 0 2px; font-size:.95rem; }
+  .predict details.locked summary { color:#8a8a8a; cursor:not-allowed; }
+  button.clicker { background:#d9a400; color:#fff; border:none; border-radius:6px; padding:6px 14px; font-size:.9rem; cursor:pointer; margin-top:4px; }
+  button.clicker:hover { background:#b88900; }
+  ul.methods { margin:8px 0; padding-left:22px; }
+  ul.methods li { margin:4px 0; }
+  .formula { font-family:Consolas,"Courier New",monospace; background:#fff; border:1px solid var(--line); border-radius:6px; padding:8px 12px; margin:6px 0; font-size:.92rem; overflow-x:auto; white-space:nowrap; }
+  .formula .lab { display:inline-block; min-width:56px; color:var(--muted); font-family:"Segoe UI","Hiragino Sans","Meiryo",sans-serif; }
+  .big { font-size:1.15rem; }
+  .coins { display:flex; flex-wrap:wrap; gap:3px; margin:6px 0; min-height:22px; }
+  .coin { width:18px; height:18px; border-radius:50%; border:2px solid var(--blue); }
+  .coin.s { background:var(--blue); }
+  .legend { display:flex; gap:18px; flex-wrap:wrap; font-size:.9rem; color:var(--muted); margin:4px 0; }
+  .legend span::before { content:""; display:inline-block; width:12px; height:12px; margin-right:5px; vertical-align:-1px; background:var(--c); border-radius:2px; }
+  .tablebox { position:relative; max-height:320px; overflow:auto; border:1px solid var(--line); border-radius:6px; margin:8px 0; }
+  table.dist { border-collapse:collapse; font-size:.84rem; width:100%; font-variant-numeric:tabular-nums; }
+  table.dist th, table.dist td { border:1px solid var(--line); padding:3px 6px; text-align:right; }
+  table.dist th { background:var(--panel); text-align:center; position:sticky; top:0; z-index:2; }
+  table.dist td.rh { background:var(--panel); text-align:center; font-weight:600; position:sticky; left:0; z-index:1; }
+  table.dist td.clickable { cursor:pointer; }
+  table.dist td.clickable:hover { background:#eef4fb; }
+  table.dist .hl-line { background:#eef4fb; }
+  table.dist .hl-head { background:#cfe0f3 !important; }
+  table.dist td.hl-cell { background:var(--blue) !important; color:#fff; font-weight:700; }
+  .practice { border:1px solid var(--line); border-radius:8px; padding:4px 16px 10px; margin:14px 0; }
+  .practice .pq { margin:12px 0 4px; }
+  .practice .fb { font-size:.92rem; min-height:1.2em; }
+  .practice .ok { color:#1e7b34; font-weight:600; }
+  .practice .ng { color:var(--red); font-weight:600; }
+  .practice details { font-size:.92rem; }
+  .practice summary { cursor:pointer; color:var(--blue); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>確率分布の応用</h1>
+  <p class="note">この教材では、確率分布を使うと何が分かるのかを、実際に手を動かして確かめます。
+  各節の「予想しよう」でまず答えを予想してから、動かして確かめてください。ソフトのインストール・ネット接続は不要です。
+  この教材のあとに「推測統計の直感的理解」（si_demo.html）に進みます。</p>
+
+  <!-- ============ 1. 二項分布 ============ -->
+  <h2>1. 確率分布の例: 二項分布</h2>
+  <p>確率 p で「成功」する試行（コインの表，転倒の発生など）を n 回くり返したときの<b>成功回数</b>は，二項分布に従います。
+  下で実際に試行をくり返し，<b>実験で得られた割合（灰色の棒）</b>と，<b>二項分布の確率質量関数から計算した確率（赤い点）</b>を比べてみましょう。</p>
+  <div class="predict">
+    <div class="q">予想しよう Q1：偏りのないコインを10枚投げたとき，表がちょうど5枚になる確率は？</div>
+    <div class="opts">
+      <label><input type="radio" name="q1" value="1"> 約50%</label>
+      <label><input type="radio" name="q1" value="2"> 約25%</label>
+      <label><input type="radio" name="q1" value="3"> 約10%</label>
+    </div>
+    <div class="mypick" id="q1pick"></div>
+    <span id="q1clicker"></span>
+    <div class="howto"><b>確かめ方：</b>「例」の「コイン10枚（n=10, p=0.5）」を押すと，グラフの下の「二項分布の確率を計算する」に，表がちょうど5枚になる確率が表示されます。「1000回くり返す」を押して，実験での割合とも比べましょう。</div>
+    <details><summary>解説（動かして確かめてから開こう）</summary>
+      <p>答えは「約25%」（正確には 24.6%）。表が出る確率は 0.5 なので「5枚がふつう」と感じますが，ちょうど5枚になるのは4回に1回程度です。4枚や6枚もそれぞれ約20.5%あり，確率は0〜10枚に分かれて配分されます。試行をくり返すほど，灰色の棒（実験結果）は赤い点（理論値）に近づきます。</p>
+    </details>
+  </div>
+  <div class="predict">
+    <div class="q">予想しよう Q2：転倒の発生率が1人あたり1%の病棟で，入院患者100人のうち3人以上が転倒する確率は？</div>
+    <div class="opts">
+      <label><input type="radio" name="q2" value="1"> ほぼ0%（1%なら100人で1人程度のはず）</label>
+      <label><input type="radio" name="q2" value="2"> 約8%</label>
+      <label><input type="radio" name="q2" value="3"> 約30%</label>
+    </div>
+    <div class="mypick" id="q2pick"></div>
+    <span id="q2clicker"></span>
+    <div class="howto"><b>確かめ方：</b>「例」の「転倒（n=100, p=0.01）」を押すと，グラフの下の「二項分布の確率を計算する」に，3人以上が転倒する確率 P(X ≥ 3) と，Excel・R での計算式が表示されます。</div>
+    <details><summary>解説（動かして確かめてから開こう）</summary>
+      <p>答えは「約8%」（正確には 7.9%）。平均は 100 × 0.01 = 1人ですが，3人以上になることも12回に1回程度は起こります。「今月は3人転倒したから病棟の対策が悪化した」とすぐに判断できないのはこのためです。n が大きく p が小さいとき，二項分布はポアソン分布（平均 λ = np）でよく近似できます。「ポアソン分布」にチェックを入れて確かめましょう。</p>
+    </details>
+  </div>
+  <div class="controls">
+    <div class="row">
+      <label class="name" for="bNRange">試行回数 n</label>
+      <input type="range" id="bNRange" min="1" max="100" step="1" value="10">
+      <span class="stepper"><button type="button" id="bNMinus">−</button>
+        <input type="number" id="bNNum" min="1" max="100" step="1" value="10">
+        <button type="button" id="bNPlus">＋</button></span>
+    </div>
+    <div class="row">
+      <label class="name" for="bPRange">成功確率 p</label>
+      <input type="range" id="bPRange" min="0.01" max="0.99" step="0.01" value="0.5">
+      <span class="stepper"><button type="button" id="bPMinus">−</button>
+        <input type="number" id="bPNum" min="0.01" max="0.99" step="0.01" value="0.5">
+        <button type="button" id="bPPlus">＋</button></span>
+    </div>
+    <div class="row"><label class="name">例</label>
+      <button class="preset" id="bPresetCoin">コイン10枚（n=10, p=0.5）</button>
+      <button class="preset" id="bPresetFall">転倒（n=100, p=0.01）</button>
+    </div>
+    <div class="row">
+      <button class="roll" id="bOnce">1回試行する</button>
+      <button class="nav" id="b100">100回くり返す</button>
+      <button class="nav" id="b1000">1000回くり返す</button>
+      <button class="nav" id="bReset">リセット</button>
+    </div>
+    <div class="row"><label class="name">近似曲線を重ねる</label>
+      <span class="radio">
+        <label><input type="checkbox" id="bNormal"> 正規分布（平均 np, 分散 np(1−p)）</label>
+        <label><input type="checkbox" id="bPois"> ポアソン分布（平均 λ = np）</label>
+      </span></div>
+  </div>
+  <div class="caption">最新の1回の試行（● 成功，○ 失敗）</div>
+  <div class="coins" id="bCoins"></div>
+  <div class="readout" id="bReadout"></div>
+  <div class="legend" id="bLegend"></div>
+  <canvas id="bCanvas" width="780" height="300"></canvas>
+  <h3>二項分布の確率を計算する</h3>
+  <div class="controls">
+    <div class="row"><label class="name" for="bK">成功回数 k</label>
+      <input type="number" class="numin" id="bK" min="0" max="100" step="1" value="5">
+      <span class="radio">
+        <label><input type="radio" name="bType" value="eq" checked> ちょうど k 回</label>
+        <label><input type="radio" name="bType" value="le"> k 回以下</label>
+        <label><input type="radio" name="bType" value="ge"> k 回以上</label>
+      </span></div>
+  </div>
+  <div class="readout" id="bCalc"></div>
+
+  <!-- ============ 2. ヒストグラムから確率密度へ ============ -->
+  <h2>2. ヒストグラムから確率密度関数へ</h2>
+  <p>身長のような連続的な値の確率分布は，確率密度関数で表します。確率密度関数は「ヒストグラムの階級幅を0に近づけていったもの」です。
+  架空の国の成人男性5万人の名簿（全員分のデータは次の教材「推測統計の直感的理解」で見ることができます）から抽出した人の身長でヒストグラムを描き，縦軸の種類と階級幅を変えてみましょう。赤い曲線は，母集団と同じ平均・標準偏差の正規分布です。</p>
+  <div class="predict">
+    <div class="q">予想しよう Q3：縦軸を「密度」にしたまま，階級幅を 5 cm から 1 cm に変えると，いちばん高い棒の高さはどうなる？</div>
+    <div class="opts">
+      <label><input type="radio" name="q3" value="1"> 約5分の1になる</label>
+      <label><input type="radio" name="q3" value="2"> ほとんど変わらない</label>
+      <label><input type="radio" name="q3" value="3"> 約5倍になる</label>
+    </div>
+    <div class="mypick" id="q3pick"></div>
+    <span id="q3clicker"></span>
+    <div class="howto"><b>確かめ方：</b>下の「縦軸」を「密度」にして，「階級幅」を「5 cm」と「1 cm」で切り替え，いちばん高い棒の高さを比べます。「使う人数」は 10,000人以上にすると見やすくなります。</div>
+    <details><summary>解説（動かして確かめてから開こう）</summary>
+      <p>答えは「ほとんど変わらない」（人数が十分多い場合）。密度 = 度数 ÷（人数 × 階級幅）なので，棒の<b>面積</b>がその階級に入る人の割合（確率）を表し，全部の棒の面積の合計は常に1です。階級幅を変えても高さはほぼ変わらず，階級幅を細かくしていくと赤い曲線（確率密度関数）に近づきます。縦軸が「度数」だと，階級幅を5分の1にすると棒の高さもほぼ5分の1になります。確率密度の値そのものは確率ではなく，<b>確率は曲線の下の面積</b>で表されることを覚えておきましょう。</p>
+    </details>
+  </div>
+  <div class="controls">
+    <div class="row"><label class="name">使う人数</label>
+      <span class="radio">
+        <label><input type="radio" name="cN" value="100"> 100人</label>
+        <label><input type="radio" name="cN" value="1000"> 1,000人</label>
+        <label><input type="radio" name="cN" value="10000" checked> 10,000人</label>
+        <label><input type="radio" name="cN" value="50000"> 男性全員（50,000人）</label>
+      </span>
+      <button class="nav" id="cRoll">抽出しなおす</button></div>
+    <div class="row"><label class="name">階級幅</label>
+      <span class="radio">
+        <label><input type="radio" name="cW" value="5" checked> 5 cm</label>
+        <label><input type="radio" name="cW" value="2"> 2 cm</label>
+        <label><input type="radio" name="cW" value="1"> 1 cm</label>
+        <label><input type="radio" name="cW" value="0.5"> 0.5 cm</label>
+        <label><input type="radio" name="cW" value="0.2"> 0.2 cm</label>
+      </span></div>
+    <div class="row"><label class="name">縦軸</label>
+      <span class="radio">
+        <label><input type="radio" name="cY" value="count"> 度数（人数）</label>
+        <label><input type="radio" name="cY" value="rel"> 相対度数（割合）</label>
+        <label><input type="radio" name="cY" value="dens" checked> 密度</label>
+      </span></div>
+    <div class="row"><label class="name">色をつける範囲</label>
+      <input type="number" class="numin" id="cA" step="1" value="170"> cm 以上
+      <input type="number" class="numin" id="cB" step="1" value="175"> cm 未満
+      <label><input type="checkbox" id="cCurve" checked> 正規分布の曲線を重ねる</label></div>
+  </div>
+  <div class="readout" id="cReadout"></div>
+  <canvas id="cCanvas" width="780" height="300"></canvas>
+
+  <!-- ============ 3. 正規分布の確率計算 ============ -->
+  <h2>3. 正規分布で確率とパーセント点を求める</h2>
+  <p>確率変数が正規分布に従うと分かっていれば，「ある値以下になる確率（下側確率）」「ある値以上になる確率（上側確率）」や，
+  「下から○%にあたる値（パーセント点）」を計算できます。上の図は確率密度関数で，<b>塗られた部分の面積が確率</b>です。
+  下の図は累積分布関数で，<b>その高さが下側確率</b>を表します。値を動かして，2つの図の対応を確かめましょう。</p>
+  <div class="predict">
+    <div class="q">予想しよう Q4：正規分布に従う集団で，平均 ± 2標準偏差の範囲に入る人の割合は？</div>
+    <div class="opts">
+      <label><input type="radio" name="q4" value="1"> 約68%</label>
+      <label><input type="radio" name="q4" value="2"> 約95%</label>
+      <label><input type="radio" name="q4" value="3"> 約99.7%</label>
+    </div>
+    <div class="mypick" id="q4pick"></div>
+    <span id="q4clicker"></span>
+    <div class="howto"><b>確かめ方：</b>下の「区間をセット」で「平均 ± 2SD」を押すと，その範囲に入る確率が表示されます。「例」の分布を切り替えても確かめましょう。</div>
+    <details><summary>解説（動かして確かめてから開こう）</summary>
+      <p>答えは「約95%」（正確には 95.45%）。平均 ± 1標準偏差なら約68.3%，± 3標準偏差なら約99.7%です。これは平均や標準偏差の値に関係なく，どの正規分布でも同じです。ちょうど95%になるのは ± 1.96標準偏差で，この 1.96 は信頼区間や検定で何度も登場します。</p>
+    </details>
+  </div>
+  <div class="controls">
+    <div class="row"><label class="name">正規分布</label>
+      平均 <input type="number" class="numin" id="dMu" value="172" step="any">
+      標準偏差 <input type="number" class="numin" id="dSd" value="5" step="any" min="0.0001"></div>
+    <div class="row"><label class="name">例</label>
+      <button class="preset" data-mu="0" data-sd="1">標準正規分布（0, 1）</button>
+      <button class="preset" data-mu="172" data-sd="5">身長（172 cm, 5 cm）</button>
+      <button class="preset" data-mu="50" data-sd="10">偏差値（50, 10）</button>
+      <button class="preset" data-mu="3000" data-sd="400">出生体重（3000 g, 400 g と仮定）</button>
+    </div>
+    <div class="row"><label class="name">求めるもの</label>
+      <span class="radio">
+        <label><input type="radio" name="dMode" value="val" checked> 値 → 確率</label>
+        <label><input type="radio" name="dMode" value="pct"> 確率 → 値（パーセント点）</label>
+      </span></div>
+    <div id="dValBox">
+      <div class="row"><label class="name">確率の種類</label>
+        <span class="radio">
+          <label><input type="radio" name="dType" value="lower" checked> 下側確率 P(X ≤ a)</label>
+          <label><input type="radio" name="dType" value="upper"> 上側確率 P(X ≥ a)</label>
+          <label><input type="radio" name="dType" value="between"> 区間 P(a ≤ X ≤ b)</label>
+        </span></div>
+      <div class="row"><label class="name" for="dARange">値 a</label>
+        <input type="range" id="dARange"><input type="number" class="numin" id="dANum" step="any"></div>
+      <div class="row" id="dBRow"><label class="name" for="dBRange">値 b</label>
+        <input type="range" id="dBRange"><input type="number" class="numin" id="dBNum" step="any"></div>
+      <div class="row"><label class="name">区間をセット</label>
+        <button class="preset" data-k="1">平均 ± 1SD</button>
+        <button class="preset" data-k="1.96">平均 ± 1.96SD</button>
+        <button class="preset" data-k="2">平均 ± 2SD</button>
+        <button class="preset" data-k="3">平均 ± 3SD</button></div>
+    </div>
+    <div id="dPctBox" hidden>
+      <div class="row"><label class="name">パーセント点の種類</label>
+        <span class="radio">
+          <label><input type="radio" name="dPType" value="lower" checked> 下側 100α% 点（下から α）</label>
+          <label><input type="radio" name="dPType" value="upper"> 上側 100α% 点（上から α）</label>
+        </span></div>
+      <div class="row"><label class="name" for="dAlphaRange">α（%）</label>
+        <input type="range" id="dAlphaRange" min="0.1" max="99.9" step="0.1" value="10"><input type="number" class="numin" id="dAlphaNum" min="0.1" max="99.9" step="0.1" value="10"></div>
+    </div>
+  </div>
+  <div class="readout" id="dReadout"></div>
+  <div class="caption">確率密度関数（塗られた部分の面積 = 確率）</div>
+  <canvas id="dPdf" width="780" height="260"></canvas>
+  <div class="caption">累積分布関数（曲線の高さ = 下側確率）</div>
+  <canvas id="dCdf" width="780" height="220"></canvas>
+
+  <h3>練習問題</h3>
+  <p>上の計算機を使って（または Excel や R で）答えを求め，入力して「判定」を押しましょう。</p>
+  <div class="practice" id="practice"></div>
+
+  <!-- ============ 4. 分布表とt分布 ============ -->
+  <h2>4. 分布表の読み方と t 分布</h2>
+  <h3>4a. 標準正規分布表（上側確率）</h3>
+  <p>コンピュータで確率を計算できるようになる前は，<b>分布表</b>で確率を調べていました。下の表は，標準正規分布の上側確率 P(Z ≥ z) の表です。
+  <b>行が z の小数第1位まで，列が小数第2位</b>を表します。z を動かすか，表のセルをクリックして，表の値と図の面積が対応していることを確かめましょう。</p>
+  <div class="controls">
+    <div class="row">
+      <label class="name" for="eZRange">z の値</label>
+      <input type="range" id="eZRange" min="0" max="3.49" step="0.01" value="1.96">
+      <span class="stepper"><button type="button" id="eZMinus">−</button>
+        <input type="number" id="eZNum" min="0" max="3.49" step="0.01" value="1.96">
+        <button type="button" id="eZPlus">＋</button></span>
+    </div>
+  </div>
+  <div class="readout" id="eZReadout"></div>
+  <canvas id="eZCanvas" width="780" height="200"></canvas>
+  <div class="tablebox" id="eZTableBox"></div>
+
+  <h3>4b. t 分布と自由度</h3>
+  <p>母分散が分からないときの平均の推定や検定では，正規分布の代わりに <b>t 分布</b>を使います。t 分布の形は<b>自由度</b>（おおむねサンプルサイズ − 1）で決まります。
+  自由度を変えて，t 分布（青）と標準正規分布（灰色の破線）を比べましょう。縦線は上側パーセント点です。</p>
+  <div class="predict">
+    <div class="q">予想しよう Q5：自由度を大きくしていくと，t 分布の上側2.5%点はどうなる？</div>
+    <div class="opts">
+      <label><input type="radio" name="q5" value="1"> 大きくなっていく</label>
+      <label><input type="radio" name="q5" value="2"> 小さくなり，1.96 に近づく</label>
+      <label><input type="radio" name="q5" value="3"> 自由度に関係なく 1.96 のまま</label>
+    </div>
+    <div class="mypick" id="q5pick"></div>
+    <span id="q5clicker"></span>
+    <div class="howto"><b>確かめ方：</b>下の「上側確率」で「0.025」を選び，「自由度」を 1 から 100 まで動かして，上側2.5%点の値の変化を見ます。</div>
+    <details><summary>解説（動かして確かめてから開こう）</summary>
+      <p>答えは「小さくなり，1.96 に近づく」。自由度が小さい t 分布は正規分布より裾が厚く，同じ上側2.5%点が外側（自由度10で 2.228，自由度3で 3.182）になります。サンプルサイズが小さいと標準偏差の推定も不確かになるので，その分だけ信頼区間を広くとる，と考えるとよいでしょう。自由度が30を超えるとかなり正規分布に近く，無限大で一致します。</p>
+    </details>
+  </div>
+  <div class="controls">
+    <div class="row">
+      <label class="name" for="eDfRange">自由度</label>
+      <input type="range" id="eDfRange" min="1" max="100" step="1" value="10">
+      <span class="stepper"><button type="button" id="eDfMinus">−</button>
+        <input type="number" id="eDfNum" min="1" max="100" step="1" value="10">
+        <button type="button" id="eDfPlus">＋</button></span>
+    </div>
+    <div class="row"><label class="name">上側確率</label>
+      <span class="radio">
+        <label><input type="radio" name="eAlpha" value="0.1"> 0.10</label>
+        <label><input type="radio" name="eAlpha" value="0.05"> 0.05</label>
+        <label><input type="radio" name="eAlpha" value="0.025" checked> 0.025</label>
+        <label><input type="radio" name="eAlpha" value="0.01"> 0.01</label>
+        <label><input type="radio" name="eAlpha" value="0.005"> 0.005</label>
+      </span></div>
+  </div>
+  <div class="readout" id="eTReadout"></div>
+  <canvas id="eTCanvas" width="780" height="260"></canvas>
+  <div class="caption">t 分布のパーセント点表（行: 自由度，列: 上側確率）</div>
+  <div class="tablebox" id="eTTableBox"></div>
+
+  <!-- ============ 5. まとめ ============ -->
+  <h2>5. まとめと次の教材へ</h2>
+  <ul class="methods">
+    <li>確率分布が分かれば，ある値をとる確率，ある値以下・以上になる確率，上位・下位○%にあたる値を計算できる。</li>
+    <li>連続的な値では，確率は確率密度関数の下の面積で表され，下側確率は累積分布関数の高さで読み取れる。</li>
+  </ul>
+  <p>次の「<a href="si_demo.html">推測統計の直感的理解</a>」では，架空の国の名簿から実際に標本を抽出して，抽出方法による違い，標本平均が従う確率分布（中心極限定理），
+  それを使った信頼区間の考え方を体験します。</p>
+</div>
+
+<script>
+"use strict";
+
+/* ============ クリッカー連携の設定（任意） ============ */
+/* 授業でウェブクリッカー（Mentimeter, Slido, respon, Google フォームなど）を使う場合は，
+   各設問の「参加用URL」を下の "" の中に貼り付けてください。
+   URLを入れた設問にだけ「クリッカーで回答する」ボタンが表示されます。
+   すべて空欄のままなら何も表示されず，完全オフラインで使えます。 */
+const CLICKER = {
+  q1: "",  // Q1 コイン10枚で表5枚
+  q2: "",  // Q2 転倒3人以上
+  q3: "",  // Q3 密度ヒストグラムの高さ
+  q4: "",  // Q4 平均±2SD
+  q5: ""   // Q5 t分布の上側2.5%点
+};
+
+/* ============ 乱数 ============ */
+/* 母集団生成用: 固定シード（誰が開いても同じ名簿になる） */
+function mulberry32(seed) { let a = seed >>> 0; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function randInt(n) { return (Math.random() * n) | 0; }
+
+/* ============ 統計・数値関数 ============ */
+function fmt(x, d) { return x.toFixed(d == null ? 2 : d); }
+function pct(p, d) { return (100 * p).toFixed(d == null ? 2 : d) + "%"; }
+
+function logGamma(x) {
+  const g = 7, c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - logGamma(1 - x);
+  x -= 1; let a = c[0]; const t = x + g + 0.5;
+  for (let i = 1; i < g + 2; i++) a += c[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+function betacf(a, b, x) {
+  const MAXIT = 300, EPS = 3e-12, FPMIN = 1e-300;
+  let qab = a + b, qap = a + 1, qam = a - 1, c = 1, d = 1 - qab * x / qap;
+  if (Math.abs(d) < FPMIN) d = FPMIN; d = 1 / d; let h = d;
+  for (let m = 1; m <= MAXIT; m++) {
+    const m2 = 2 * m;
+    let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d; h *= d * c;
+    aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d; const del = d * c; h *= del;
+    if (Math.abs(del - 1) < EPS) break;
+  }
+  return h;
+}
+function betai(a, b, x) {
+  if (x <= 0) return 0; if (x >= 1) return 1;
+  const bt = Math.exp(logGamma(a + b) - logGamma(a) - logGamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+  if (x < (a + 1) / (a + b + 2)) return bt * betacf(a, b, x) / a;
+  return 1 - bt * betacf(b, a, 1 - x) / b;
+}
+
+/* 正規分布 */
+function erfc(x) {
+  const z = Math.abs(x), t = 1 / (1 + 0.5 * z);
+  const r = t * Math.exp(-z * z - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 + t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277)))))))));
+  return x >= 0 ? r : 2 - r;
+}
+function dnorm(x, mu, sd) { const z = (x - mu) / sd; return Math.exp(-0.5 * z * z) / (sd * Math.sqrt(2 * Math.PI)); }
+function pnorm(x, mu, sd) { return 0.5 * erfc(-(x - mu) / (sd * Math.SQRT2)); }
+/* 標準正規分布の逆関数（Acklamの近似 + ニュートン法1回で補正） */
+function qnormStd(p) {
+  if (p <= 0) return -Infinity; if (p >= 1) return Infinity;
+  const a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  const b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+  const c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  const d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+  const pl = 0.02425; let x;
+  if (p < pl) { const q = Math.sqrt(-2 * Math.log(p)); x = (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+  else if (p <= 1 - pl) { const q = p - 0.5, r = q * q; x = (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1); }
+  else { const q = Math.sqrt(-2 * Math.log(1 - p)); x = -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+  const e = pnorm(x, 0, 1) - p, u = e * Math.sqrt(2 * Math.PI) * Math.exp(x * x / 2);
+  return x - u / (1 + x * u / 2);
+}
+function qnorm(p, mu, sd) { return mu + sd * qnormStd(p); }
+
+/* t分布 */
+function dt(t, df) { return Math.exp(logGamma((df + 1) / 2) - logGamma(df / 2)) / Math.sqrt(df * Math.PI) * Math.pow(1 + t * t / df, -(df + 1) / 2); }
+function tCDF(t, df) { const x = df / (df + t * t); const ib = 0.5 * betai(df / 2, 0.5, x); return t > 0 ? 1 - ib : ib; }
+function qt(p, df) { let lo = -1000, hi = 1000; for (let i = 0; i < 80; i++) { const mid = (lo + hi) / 2; if (tCDF(mid, df) < p) lo = mid; else hi = mid; } return (lo + hi) / 2; }
+
+/* 二項分布・ポアソン分布 */
+function dbinom(k, n, p) {
+  if (k < 0 || k > n) return 0;
+  if (p <= 0) return k === 0 ? 1 : 0; if (p >= 1) return k === n ? 1 : 0;
+  return Math.exp(logGamma(n + 1) - logGamma(k + 1) - logGamma(n - k + 1) + k * Math.log(p) + (n - k) * Math.log(1 - p));
+}
+function pbinom(k, n, p) { let s = 0; for (let i = 0; i <= Math.min(k, n); i++) s += dbinom(i, n, p); return Math.min(1, s); }
+function dpois(k, lam) { return Math.exp(k * Math.log(lam) - lam - logGamma(k + 1)); }
+
+/* ============ 母集団（名簿）の生成 ============ */
+/* si_demo.html と同じシード・同じ手順で生成（同じ名簿になる） */
+const POP = (function () {
+  const seed = 181, N = 50000, M = 2 * N;
+  const rng = mulberry32(seed);
+  function srandn() { let u = 0, v = 0; while (u === 0) u = rng(); while (v === 0) v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  const H = new Float64Array(M), W = new Float64Array(M), S = new Uint8Array(M), A = new Uint8Array(M), V = new Uint16Array(M);
+  const rhoM = 43.3 / (7.1 * 11.1), rhoW = 26 / (7 * 9.3);
+  for (let i = 0; i < N; i++) { const z1 = srandn(), z2 = srandn(); H[i] = Math.round((168 + 7.1 * z1) * 10) / 10; W[i] = Math.round((67.3 + 11.1 * (rhoM * z1 + Math.sqrt(1 - rhoM * rhoM) * z2)) * 10) / 10; S[i] = 1; }
+  for (let i = N; i < M; i++) { const z1 = srandn(), z2 = srandn(); H[i] = Math.round((154.5 + 7 * z1) * 10) / 10; W[i] = Math.round((53.5 + 9.3 * (rhoW * z1 + Math.sqrt(1 - rhoW * rhoW) * z2)) * 10) / 10; S[i] = 2; }
+  for (let i = 0; i < M; i++) { A[i] = rng() < 0.5 ? 1 : 2; V[i] = Math.round(-4.5 * Math.log(1 - rng())); }
+  const perm = new Uint32Array(M);
+  for (let i = 0; i < M; i++) perm[i] = i;
+  for (let i = M - 1; i > 0; i--) { const j = (rng() * (i + 1)) | 0; const t = perm[i]; perm[i] = perm[j]; perm[j] = t; }
+  const h = new Float64Array(M), w = new Float64Array(M), s = new Uint8Array(M), a = new Uint8Array(M), v = new Uint16Array(M);
+  for (let i = 0; i < M; i++) { const k = perm[i]; h[i] = H[k]; w[i] = W[k]; s[i] = S[k]; a[i] = A[k]; v[i] = V[k]; }
+  const menIdx = [], womenIdx = [], allIdx = new Array(M);
+  for (let i = 0; i < M; i++) { allIdx[i] = i; if (s[i] === 1) menIdx.push(i); else womenIdx.push(i); }
+
+  return { M: M, height: h, weight: w, sex: s, area: a, visits: v, menIdx: menIdx, womenIdx: womenIdx, allIdx: allIdx };
+})();
+
+function idxMean(arr, idx) { let s = 0; for (let i = 0; i < idx.length; i++) s += arr[idx[i]]; return s / idx.length; }
+function idxSd(arr, idx) { const m = idxMean(arr, idx); let s = 0; for (let i = 0; i < idx.length; i++) { const d = arr[idx[i]] - m; s += d * d; } return Math.sqrt(s / (idx.length - 1)); }
+const POPSTAT = { mh: idxMean(POP.height, POP.menIdx), mhSd: idxSd(POP.height, POP.menIdx) };
+
+/* 名簿からの無作為抽出（非復元, 毎回異なる） */
+function sampleFrom(pool, n) {
+  if (n >= pool.length) return pool.slice();
+  const seen = new Set(), out = [];
+  while (out.length < n) { const j = pool[randInt(pool.length)]; if (!seen.has(j)) { seen.add(j); out.push(j); } }
+  return out;
+}
+
+/* ============ 作図の共通部品 ============ */
+function setupCanvas(cv) {
+  /* 論理サイズは初回のwidth/height属性を保持して使う（再描画のたびにdpr倍されて拡大し続けるのを防ぐ） */
+  if (!cv.dataset.w) { cv.dataset.w = cv.width; cv.dataset.h = cv.height; }
+  const dpr = window.devicePixelRatio || 1, w = +cv.dataset.w, h = +cv.dataset.h;
+  cv.width = w * dpr; cv.height = h * dpr; cv.style.width = w + "px"; cv.style.height = "auto"; /* 狭い画面では max-width:100% で縮み，縦横比を保つ */
+  const ctx = cv.getContext("2d"); ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h);
+  return { ctx: ctx, w: w, h: h };
+}
+function niceTicks(lo, hi, n) {
+  const span = hi - lo; if (span <= 0) return [lo];
+  const raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw))), norm = raw / mag;
+  let step; if (norm < 1.5) step = 1; else if (norm < 3) step = 2; else if (norm < 7) step = 5; else step = 10;
+  step *= mag;
+  const start = Math.ceil(lo / step) * step, out = [];
+  for (let v = start; v <= hi + step * 1e-9; v += step) out.push(Math.round(v / step) * step);
+  return out;
+}
+function frame(ctx, W, H, dom, opts) {
+  const mL = 56, mR = 16, mT = 14, mB = 38;
+  const x0 = mL, x1 = W - mR, y0 = H - mB, y1 = mT;
+  const xmin = dom[0], xmax = dom[1], ymin = dom[2], ymax = dom[3];
+  const sx = function (v) { return x0 + (v - xmin) / (xmax - xmin) * (x1 - x0); };
+  const sy = function (v) { return y0 + (v - ymin) / (ymax - ymin) * (y1 - y0); };
+  ctx.lineWidth = 1; ctx.font = "12px 'Segoe UI', sans-serif";
+  const yt = niceTicks(ymin, ymax, 5);
+  ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillStyle = "#666";
+  for (const t of yt) { const y = sy(t); ctx.strokeStyle = "#eee"; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke(); ctx.fillText(opts && opts.yfmt ? opts.yfmt(t) : String(t), x0 - 8, y); }
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  const xt = opts && opts.xticks ? opts.xticks : niceTicks(xmin, xmax, 6);
+  for (const t of xt) { ctx.fillText(opts && opts.xfmt ? opts.xfmt(t) : String(t), sx(t), y0 + 6); }
+  ctx.strokeStyle = "#999"; ctx.beginPath(); ctx.moveTo(x0, y1); ctx.lineTo(x0, y0); ctx.lineTo(x1, y0); ctx.stroke();
+  return { sx: sx, sy: sy, x0: x0, x1: x1, y0: y0, y1: y1 };
+}
+function trimNum(t) { return String(+t.toFixed(6)); }
+function curve(ctx, sc, f, xlo, xhi, color, width, dash) {
+  ctx.strokeStyle = color; ctx.lineWidth = width || 2; ctx.setLineDash(dash || []);
+  ctx.beginPath();
+  for (let i = 0; i <= 400; i++) { const x = xlo + (xhi - xlo) * i / 400, y = sc.sy(f(x)); if (i === 0) ctx.moveTo(sc.sx(x), y); else ctx.lineTo(sc.sx(x), y); }
+  ctx.stroke(); ctx.setLineDash([]);
+}
+function fillArea(ctx, sc, f, xlo, xhi, color) {
+  if (!(xhi > xlo)) return;
+  ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(sc.sx(xlo), sc.y0);
+  for (let i = 0; i <= 300; i++) { const x = xlo + (xhi - xlo) * i / 300; ctx.lineTo(sc.sx(x), sc.sy(f(x))); }
+  ctx.lineTo(sc.sx(xhi), sc.y0); ctx.closePath(); ctx.fill();
+}
+function vline(ctx, sc, x, color, dash) {
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash(dash || []);
+  ctx.beginPath(); ctx.moveTo(sc.sx(x), sc.y0); ctx.lineTo(sc.sx(x), sc.y1); ctx.stroke(); ctx.setLineDash([]);
+}
+function radioVal(name) { return document.querySelector('input[name="' + name + '"]:checked').value; }
+function onRadio(name, fn) { Array.prototype.forEach.call(document.querySelectorAll('input[name="' + name + '"]'), function (el) { el.addEventListener("change", fn); }); }
+function setRadio(name, value) { const el = document.querySelector('input[name="' + name + '"][value="' + value + '"]'); if (el) el.checked = true; }
+
+/* 数値コントロール（スライダー＋数値入力＋[−][＋]）を1つに束ねる */
+function linkNumeric(base, onChange) {
+  const range = document.getElementById(base + "Range");
+  const num = document.getElementById(base + "Num");
+  const minus = document.getElementById(base + "Minus");
+  const plus = document.getElementById(base + "Plus");
+  const min = +range.min, max = +range.max, step = +range.step || 1;
+  const dec = (String(step).split(".")[1] || "").length;
+  function round(v) { const r = Math.round(v / step) * step; return +r.toFixed(dec); }
+  function get() { return +range.value; }
+  function set(v) { if (isNaN(v)) v = min; v = round(v); if (v < min) v = min; if (v > max) v = max; range.value = v; num.value = v; }
+  range.addEventListener("input", function () { num.value = range.value; onChange(); });
+  num.addEventListener("change", function () { set(+num.value); onChange(); });
+  minus.addEventListener("click", function () { set(get() - step); onChange(); });
+  plus.addEventListener("click", function () { set(get() + step); onChange(); });
+  return { get: get, set: set };
+}
+
+/* ============ 1. 二項分布 ============ */
+const bState = { counts: [], K: 0, last: null, sum: 0, sumSq: 0 };
+function bReset() { const n = bN.get(); bState.counts = new Array(n + 1).fill(0); bState.K = 0; bState.last = null; bState.sum = 0; bState.sumSq = 0; bDraw(); }
+function bRun(times) {
+  const n = bN.get(), p = bP.get();
+  for (let t = 0; t < times; t++) {
+    const res = new Array(n); let x = 0;
+    for (let i = 0; i < n; i++) { res[i] = Math.random() < p; if (res[i]) x++; }
+    bState.counts[x]++; bState.K++; bState.sum += x; bState.sumSq += x * x; bState.last = res;
+  }
+  bDraw();
+}
+function bDraw() {
+  const n = bN.get(), p = bP.get(), K = bState.K, mu = n * p, sd = Math.sqrt(n * p * (1 - p));
+  /* 最新の試行 */
+  const coins = document.getElementById("bCoins");
+  coins.innerHTML = bState.last ? bState.last.map(function (s) { return "<span class='coin" + (s ? " s" : "") + "'></span>"; }).join("") : "<span class='caption' style='margin:0'>まだ試行していません</span>";
+  /* 表示範囲: 理論確率がほぼ0の部分は省く（実験結果があれば含める） */
+  let xlo = Math.max(0, Math.floor(mu - 5 * sd) - 1), xhi = Math.min(n, Math.ceil(mu + 5 * sd) + 1);
+  for (let k = 0; k <= n; k++) if (bState.counts[k] > 0) { xlo = Math.min(xlo, k); xhi = Math.max(xhi, k); }
+  const theo = [], emp = [];
+  let ymax = 0;
+  for (let k = xlo; k <= xhi; k++) { const t = dbinom(k, n, p), e = K ? bState.counts[k] / K : 0; theo.push(t); emp.push(e); ymax = Math.max(ymax, t, e); }
+  ymax *= 1.15;
+  const showN = document.getElementById("bNormal").checked, showP = document.getElementById("bPois").checked;
+  const cv = setupCanvas(document.getElementById("bCanvas")), ctx = cv.ctx;
+  const sc = frame(ctx, cv.w, cv.h, [xlo - 0.6, xhi + 0.6, 0, ymax], {
+    xticks: niceTicks(xlo, xhi, 10).filter(function (t) { return Math.abs(t - Math.round(t)) < 1e-9; }),
+    xfmt: function (t) { return fmt(t, 0); }, yfmt: function (t) { return trimNum(t); }
+  });
+  /* 確率計算でえらんだ範囲を薄く塗る */
+  const kSel = bKget(), type = radioVal("bType");
+  const inSel = function (k) { return type === "eq" ? k === kSel : type === "le" ? k <= kSel : k >= kSel; };
+  const bw = Math.max(1, (sc.sx(1) - sc.sx(0)) * 0.7);
+  for (let k = xlo; k <= xhi; k++) {
+    if (inSel(k)) { ctx.fillStyle = "rgba(209,52,56,0.10)"; ctx.fillRect(sc.sx(k - 0.5), sc.y1, sc.sx(k + 0.5) - sc.sx(k - 0.5), sc.y0 - sc.y1); }
+    const e = emp[k - xlo];
+    if (e > 0) { ctx.fillStyle = "rgba(138,138,138,0.7)"; ctx.fillRect(sc.sx(k) - bw / 2, sc.sy(e), bw, sc.y0 - sc.sy(e)); }
+  }
+  if (showN && sd > 0) curve(ctx, sc, function (x) { return dnorm(x, mu, sd); }, xlo - 0.6, xhi + 0.6, "#2b6cb0", 2);
+  if (showP) { ctx.fillStyle = "#d9a400"; for (let k = xlo; k <= xhi; k++) { const y = sc.sy(dpois(k, mu)), x = sc.sx(k); ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + 6, y); ctx.lineTo(x, y + 6); ctx.lineTo(x - 6, y); ctx.closePath(); ctx.fill(); } }
+  ctx.fillStyle = "#d13438";
+  for (let k = xlo; k <= xhi; k++) { ctx.beginPath(); ctx.arc(sc.sx(k), sc.sy(theo[k - xlo]), 4, 0, 2 * Math.PI); ctx.fill(); }
+  let lg = "<span style='--c:rgba(138,138,138,0.7)'>実験で得られた割合</span><span style='--c:#d13438'>二項分布の確率（理論値）</span>";
+  if (showN) lg += "<span style='--c:#2b6cb0'>正規分布で近似</span>";
+  if (showP) lg += "<span style='--c:#d9a400'>ポアソン分布で近似</span>";
+  document.getElementById("bLegend").innerHTML = lg;
+  const ro = document.getElementById("bReadout");
+  if (K === 0) ro.innerHTML = "n = " + n + "，p = " + p + " の二項分布: 平均 np = <b>" + fmt(mu) + "</b>，分散 np(1−p) = <b>" + fmt(sd * sd) + "</b>";
+  else {
+    const m = bState.sum / K, vv = K > 1 ? (bState.sumSq - K * m * m) / (K - 1) : NaN;
+    ro.innerHTML = "最新の試行: 成功 <b>" + bState.last.filter(Boolean).length + " 回</b> ／ " + n + " 回中<br>" +
+      "通算 " + K + " 回の試行: 成功回数の平均 = <b>" + fmt(m) + "</b>（理論値 np = " + fmt(mu) + "），分散 = <b>" + (isNaN(vv) ? "—" : fmt(vv)) + "</b>（理論値 np(1−p) = " + fmt(sd * sd) + "）";
+  }
+  bCalc();
+}
+function bKget() { const n = bN.get(); let k = Math.round(+document.getElementById("bK").value); if (isNaN(k) || k < 0) k = 0; if (k > n) k = n; return k; }
+function bCalc() {
+  const n = bN.get(), p = bP.get(), k = bKget(), type = radioVal("bType");
+  document.getElementById("bK").value = k;
+  let prob, label, excel, r;
+  if (type === "eq") { prob = dbinom(k, n, p); label = "P(X = " + k + ")"; excel = "=BINOM.DIST(" + k + "," + n + "," + p + ",FALSE)"; r = "dbinom(" + k + ", size = " + n + ", prob = " + p + ")"; }
+  else if (type === "le") { prob = pbinom(k, n, p); label = "P(X ≤ " + k + ")"; excel = "=BINOM.DIST(" + k + "," + n + "," + p + ",TRUE)"; r = "pbinom(" + k + ", size = " + n + ", prob = " + p + ")"; }
+  else { prob = k === 0 ? 1 : 1 - pbinom(k - 1, n, p); label = "P(X ≥ " + k + ")"; excel = "=1-BINOM.DIST(" + (k - 1) + "," + n + "," + p + ",TRUE)"; r = "1 - pbinom(" + (k - 1) + ", size = " + n + ", prob = " + p + ")"; }
+  let html = "<span class='big'>" + label + " = <b>" + fmt(Math.max(0, prob), 4) + "</b>（" + pct(Math.max(0, prob)) + "）</span>";
+  if (bState.K > 0) {
+    let c = 0; for (let j = 0; j <= n; j++) if (type === "eq" ? j === k : type === "le" ? j <= k : j >= k) c += bState.counts[j];
+    html += "　実験での割合: " + c + " / " + bState.K + " = " + pct(c / bState.K, 1);
+  }
+  if (type === "ge" && k === 0) { excel = "（0回以上は必ず起こるので 1）"; r = excel; }
+  html += "<div class='formula'><span class='lab'>Excel</span>" + excel + "<br><span class='lab'>R</span>" + r + "</div>";
+  html += "<p class='caption' style='margin:2px 0'>グラフの薄い赤の範囲が計算に含まれる成功回数です。</p>";
+  document.getElementById("bCalc").innerHTML = html;
+}
+const bN = linkNumeric("bN", bReset);
+const bP = linkNumeric("bP", bReset);
+document.getElementById("bOnce").addEventListener("click", function () { bRun(1); });
+document.getElementById("b100").addEventListener("click", function () { bRun(100); });
+document.getElementById("b1000").addEventListener("click", function () { bRun(1000); });
+document.getElementById("bReset").addEventListener("click", bReset);
+document.getElementById("bPresetCoin").addEventListener("click", function () { bN.set(10); bP.set(0.5); document.getElementById("bK").value = 5; setRadio("bType", "eq"); bReset(); });
+document.getElementById("bPresetFall").addEventListener("click", function () { bN.set(100); bP.set(0.01); document.getElementById("bK").value = 3; setRadio("bType", "ge"); bReset(); });
+document.getElementById("bNormal").addEventListener("change", bDraw);
+document.getElementById("bPois").addEventListener("change", bDraw);
+document.getElementById("bK").addEventListener("change", bDraw);
+onRadio("bType", bDraw);
+
+/* ============ 2. ヒストグラムから確率密度へ ============ */
+let cData = [];
+function cResample() { const idx = sampleFrom(POP.menIdx, +radioVal("cN")); cData = idx.map(function (i) { return POP.height[i]; }); cDraw(); }
+function cDraw() {
+  const n = cData.length, w = +radioVal("cW"), ytype = radioVal("cY");
+  const xmin = 136, xmax = 200, edge0 = xmin - 0.05; /* 身長は0.1cm単位なので，階級の境界が値と重ならないよう0.05ずらす */
+  const nb = Math.ceil((xmax - edge0) / w), counts = new Array(nb).fill(0);
+  for (let i = 0; i < n; i++) { let k = Math.floor((cData[i] - edge0) / w); if (k < 0) k = 0; if (k >= nb) k = nb - 1; counts[k]++; }
+  const scale = ytype === "count" ? 1 : ytype === "rel" ? 1 / n : 1 / (n * w);
+  const hts = counts.map(function (c) { return c * scale; });
+  const mu = POPSTAT.mh, sd = POPSTAT.mhSd, cscale = ytype === "count" ? n * w : ytype === "rel" ? w : 1;
+  const showCurve = document.getElementById("cCurve").checked;
+  let ymax = Math.max.apply(null, hts);
+  if (showCurve) ymax = Math.max(ymax, dnorm(mu, mu, sd) * cscale);
+  ymax *= 1.12;
+  let a = +document.getElementById("cA").value, b = +document.getElementById("cB").value;
+  if (isNaN(a)) a = 170; if (isNaN(b)) b = 175; if (b < a) { const t = a; a = b; b = t; }
+  const cv = setupCanvas(document.getElementById("cCanvas")), ctx = cv.ctx;
+  const sc = frame(ctx, cv.w, cv.h, [xmin, xmax, 0, ymax], { xfmt: function (t) { return fmt(t, 0); }, yfmt: function (t) { return trimNum(t); } });
+  for (let k = 0; k < nb; k++) {
+    if (!counts[k]) continue;
+    const l = edge0 + k * w, rr = l + w, x = sc.sx(l), xr = sc.sx(rr), y = sc.sy(hts[k]);
+    const inRange = l + w / 2 >= a && l + w / 2 < b;
+    ctx.fillStyle = inRange ? "rgba(43,108,176,0.75)" : "rgba(138,138,138,0.6)";
+    ctx.fillRect(x, y, Math.max(1, xr - x - (w >= 1 ? 1 : 0)), sc.y0 - y);
+  }
+  if (showCurve) curve(ctx, sc, function (x) { return dnorm(x, mu, sd) * cscale; }, xmin, xmax, "#d13438", 2);
+  vline(ctx, sc, a, "#2b6cb0", [4, 3]); vline(ctx, sc, b, "#2b6cb0", [4, 3]);
+  let inCnt = 0; for (let i = 0; i < n; i++) if (cData[i] >= a && cData[i] < b) inCnt++;
+  const area = hts.reduce(function (s, h) { return s + h * w; }, 0);
+  const ylabel = ytype === "count" ? "度数（人）" : ytype === "rel" ? "相対度数" : "密度";
+  document.getElementById("cReadout").innerHTML =
+    "人数 " + n.toLocaleString() + " 人，階級幅 " + w + " cm，縦軸 = " + ylabel + "：いちばん高い棒の高さ = <b>" + trimNum(+Math.max.apply(null, hts).toPrecision(4)) + "</b>，" +
+    "棒の面積の合計 = <b>" + trimNum(+area.toPrecision(4)) + "</b><br>" +
+    a + " cm 以上 " + b + " cm 未満の人の割合: データでは <b>" + pct(inCnt / n, 1) + "</b>，正規分布の曲線の下の面積では <b>" + pct(pnorm(b, mu, sd) - pnorm(a, mu, sd), 1) + "</b>";
+}
+["cW", "cY"].forEach(function (nm) { onRadio(nm, cDraw); });
+onRadio("cN", cResample);
+document.getElementById("cRoll").addEventListener("click", cResample);
+["cA", "cB"].forEach(function (id) { document.getElementById(id).addEventListener("change", cDraw); });
+document.getElementById("cCurve").addEventListener("change", cDraw);
+
+/* ============ 3. 正規分布の確率計算 ============ */
+const dEl = function (id) { return document.getElementById(id); };
+function dParams() {
+  let mu = +dEl("dMu").value, sd = +dEl("dSd").value;
+  if (isNaN(mu)) mu = 0; if (!(sd > 0)) { sd = 1; dEl("dSd").value = 1; }
+  return { mu: mu, sd: sd, dec: Math.max(0, 2 - Math.floor(Math.log10(sd))) };
+}
+/* 値a,bのスライダーの範囲を平均±4SDに合わせる */
+function dSyncRanges() {
+  const P = dParams(), step = +(P.sd / 100).toPrecision(2);
+  ["dARange", "dBRange"].forEach(function (id) { const r = dEl(id); r.min = P.mu - 4 * P.sd; r.max = P.mu + 4 * P.sd; r.step = step; });
+}
+function dSetAB(a, b) {
+  const P = dParams();
+  if (a != null) { const v = +a.toFixed(P.dec); dEl("dARange").value = v; dEl("dANum").value = v; }
+  if (b != null) { const v = +b.toFixed(P.dec); dEl("dBRange").value = v; dEl("dBNum").value = v; }
+}
+function dParamsChanged(keepZ) {
+  /* 分布を変えたら，aとbは同じzの位置に置きなおす */
+  const old = dEl("dMu").dataset.old ? JSON.parse(dEl("dMu").dataset.old) : null, P = dParams();
+  const za = old ? (+dEl("dANum").value - old.mu) / old.sd : -1, zb = old ? (+dEl("dBNum").value - old.mu) / old.sd : 1;
+  dSyncRanges();
+  if (keepZ !== false) dSetAB(P.mu + za * P.sd, P.mu + zb * P.sd);
+  dEl("dMu").dataset.old = JSON.stringify({ mu: P.mu, sd: P.sd });
+  dDraw();
+}
+function dDraw() {
+  const P = dParams(), mu = P.mu, sd = P.sd, mode = radioVal("dMode");
+  dEl("dValBox").hidden = mode !== "val"; dEl("dPctBox").hidden = mode !== "pct";
+  const type = radioVal("dType"); dEl("dBRow").style.display = type === "between" ? "" : "none";
+  const f = function (x) { return dnorm(x, mu, sd); }, F = function (x) { return pnorm(x, mu, sd); };
+  const xlo = mu - 4 * sd, xhi = mu + 4 * sd, xs = function (x) { return String(+x.toFixed(P.dec)); };
+  const m = String(+mu.toFixed(6)), s = String(+sd.toPrecision(6));
+  let shade = [], marks = [], text = "", excel = "", r = "";
+  if (mode === "val") {
+    let a = +dEl("dANum").value, b = +dEl("dBNum").value;
+    if (isNaN(a)) a = mu; if (isNaN(b)) b = mu + sd;
+    if (type === "between" && b < a) { const t = a; a = b; b = t; }
+    const za = (a - mu) / sd, zb = (b - mu) / sd;
+    if (type === "lower") { const p = F(a); shade = [[xlo, a]]; marks = [a]; text = "P(X ≤ " + xs(a) + ") = <b>" + fmt(p, 4) + "</b>（" + pct(p) + "）　z = (" + xs(a) + " − " + m + ") ÷ " + s + " = " + fmt(za, 2); excel = "=NORM.DIST(" + xs(a) + "," + m + "," + s + ",TRUE)"; r = "pnorm(" + xs(a) + ", mean = " + m + ", sd = " + s + ")"; }
+    else if (type === "upper") { const p = 1 - F(a); shade = [[a, xhi]]; marks = [a]; text = "P(X ≥ " + xs(a) + ") = <b>" + fmt(p, 4) + "</b>（" + pct(p) + "）　z = (" + xs(a) + " − " + m + ") ÷ " + s + " = " + fmt(za, 2); excel = "=1-NORM.DIST(" + xs(a) + "," + m + "," + s + ",TRUE)"; r = "pnorm(" + xs(a) + ", mean = " + m + ", sd = " + s + ", lower.tail = FALSE)"; }
+    else { const p = F(b) - F(a); shade = [[a, b]]; marks = [a, b]; text = "P(" + xs(a) + " ≤ X ≤ " + xs(b) + ") = <b>" + fmt(p, 4) + "</b>（" + pct(p) + "）　z: " + fmt(za, 2) + " 〜 " + fmt(zb, 2); excel = "=NORM.DIST(" + xs(b) + "," + m + "," + s + ",TRUE)-NORM.DIST(" + xs(a) + "," + m + "," + s + ",TRUE)"; r = "pnorm(" + xs(b) + ", " + m + ", " + s + ") - pnorm(" + xs(a) + ", " + m + ", " + s + ")"; }
+  } else {
+    const al = Math.min(99.9, Math.max(0.1, +dEl("dAlphaNum").value || 10)) / 100, pt = radioVal("dPType");
+    const x = pt === "lower" ? qnorm(al, mu, sd) : qnorm(1 - al, mu, sd), as = String(+al.toFixed(4));
+    if (pt === "lower") { shade = [[xlo, x]]; marks = [x]; text = "下側 " + String(+(al * 100).toFixed(2)) + "% 点 = <b>" + xs(x) + "</b>（" + String(+(al * 100).toFixed(2)) + " パーセンタイル）　z = " + fmt((x - mu) / sd, 3); excel = "=NORM.INV(" + as + "," + m + "," + s + ")"; r = "qnorm(" + as + ", mean = " + m + ", sd = " + s + ")"; }
+    else { shade = [[x, xhi]]; marks = [x]; text = "上側 " + String(+(al * 100).toFixed(2)) + "% 点 = <b>" + xs(x) + "</b>（" + String(+((1 - al) * 100).toFixed(2)) + " パーセンタイル）　z = " + fmt((x - mu) / sd, 3); excel = "=NORM.INV(" + String(+(1 - al).toFixed(4)) + "," + m + "," + s + ")"; r = "qnorm(" + as + ", mean = " + m + ", sd = " + s + ", lower.tail = FALSE)"; }
+  }
+  dEl("dReadout").innerHTML = "<span class='big'>" + text + "</span><div class='formula'><span class='lab'>Excel</span>" + excel + "<br><span class='lab'>R</span>" + r + "</div>";
+  /* 確率密度関数 */
+  const xt = []; for (let k = -4; k <= 4; k++) xt.push(mu + k * sd);
+  const xfmtSd = function (t) { return String(+t.toFixed(Math.max(0, P.dec - 1))); };
+  let cv = setupCanvas(dEl("dPdf")), ctx = cv.ctx;
+  let sc = frame(ctx, cv.w, cv.h, [xlo, xhi, 0, f(mu) * 1.12], { xticks: xt, xfmt: xfmtSd, yfmt: function (t) { return trimNum(+t.toPrecision(3)); } });
+  shade.forEach(function (rg) { fillArea(ctx, sc, f, Math.max(xlo, rg[0]), Math.min(xhi, rg[1]), "rgba(43,108,176,0.35)"); });
+  curve(ctx, sc, f, xlo, xhi, "#1a1a1a", 2);
+  marks.forEach(function (x) { if (x >= xlo && x <= xhi) vline(ctx, sc, x, "#2b6cb0"); });
+  ctx.fillStyle = "#999"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (let k = -4; k <= 4; k++) ctx.fillText(k === 0 ? "平均" : (k > 0 ? "+" : "−") + Math.abs(k) + "SD", sc.sx(mu + k * sd), sc.y0 + 20);
+  /* 累積分布関数 */
+  cv = setupCanvas(dEl("dCdf")); ctx = cv.ctx;
+  sc = frame(ctx, cv.w, cv.h, [xlo, xhi, 0, 1.05], { xticks: xt, xfmt: xfmtSd, yfmt: function (t) { return trimNum(t); } });
+  curve(ctx, sc, F, xlo, xhi, "#1a1a1a", 2);
+  marks.forEach(function (x) {
+    if (x < xlo || x > xhi) return;
+    const y = F(x);
+    ctx.strokeStyle = "#2b6cb0"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(sc.sx(x), sc.y0); ctx.lineTo(sc.sx(x), sc.sy(y)); ctx.lineTo(sc.x0, sc.sy(y)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "#2b6cb0"; ctx.beginPath(); ctx.arc(sc.sx(x), sc.sy(y), 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillText(fmt(y, 4), sc.x0 + 4, sc.sy(y) - 2);
+  });
+}
+["dMu", "dSd"].forEach(function (id) { dEl(id).addEventListener("change", function () { dParamsChanged(); }); });
+Array.prototype.forEach.call(document.querySelectorAll("button.preset[data-mu]"), function (b) {
+  b.addEventListener("click", function () { dEl("dMu").value = b.dataset.mu; dEl("dSd").value = b.dataset.sd; dParamsChanged(); });
+});
+Array.prototype.forEach.call(document.querySelectorAll("button.preset[data-k]"), function (b) {
+  b.addEventListener("click", function () { const P = dParams(), k = +b.dataset.k; setRadio("dMode", "val"); setRadio("dType", "between"); dSetAB(P.mu - k * P.sd, P.mu + k * P.sd); dDraw(); });
+});
+[["dARange", "dANum"], ["dBRange", "dBNum"], ["dAlphaRange", "dAlphaNum"]].forEach(function (pr) {
+  dEl(pr[0]).addEventListener("input", function () { dEl(pr[1]).value = dEl(pr[0]).value; dDraw(); });
+  dEl(pr[1]).addEventListener("change", function () { dEl(pr[0]).value = dEl(pr[1]).value; dDraw(); });
+});
+["dMode", "dType", "dPType"].forEach(function (nm) { onRadio(nm, dDraw); });
+
+/* 練習問題 */
+const PRACTICE = [
+  { q: "平均 172 cm，標準偏差 5 cm の正規分布に従う集団で，身長 167 cm 以下の人の割合は何%？", unit: "%", ans: 100 * pnorm(167, 172, 5), tol: 0.1, dec: 2,
+    how: "下側確率。=NORM.DIST(167,172,5,TRUE) ／ pnorm(167, mean = 172, sd = 5)" },
+  { q: "同じ集団で，下側10%点（10パーセンタイル）の身長は何 cm？", unit: "cm", ans: qnorm(0.1, 172, 5), tol: 0.05, dec: 2,
+    how: "下側パーセント点。=NORM.INV(0.1,172,5) ／ qnorm(0.1, mean = 172, sd = 5)" },
+  { q: "同じ集団で，上位1%（99パーセンタイル）の身長は何 cm？", unit: "cm", ans: qnorm(0.99, 172, 5), tol: 0.05, dec: 2,
+    how: "上側1%点 = 下側99%点。=NORM.INV(0.99,172,5) ／ qnorm(0.01, 172, 5, lower.tail = FALSE)" },
+  { q: "偏差値（平均50，標準偏差10の正規分布）が70以上の人の割合は何%？", unit: "%", ans: 100 * (1 - pnorm(70, 50, 10)), tol: 0.05, dec: 2,
+    how: "上側確率。=1-NORM.DIST(70,50,10,TRUE) ／ pnorm(70, 50, 10, lower.tail = FALSE)" },
+  { q: "出生体重が平均 3000 g，標準偏差 400 g の正規分布に従うと仮定したとき，2500 g 未満（低出生体重）の割合は何%？", unit: "%", ans: 100 * pnorm(2500, 3000, 400), tol: 0.1, dec: 2,
+    how: "下側確率（連続分布なので「未満」も「以下」も同じ）。=NORM.DIST(2500,3000,400,TRUE) ／ pnorm(2500, 3000, 400)。実際の出生体重の分布は正規分布から少しずれるため，実際の割合とは一致しません" }
+];
+(function () {
+  let html = "";
+  PRACTICE.forEach(function (p, i) {
+    html += "<div class='pq'><b>問" + (i + 1) + "</b> " + p.q + "</div>" +
+      "<div class='row' style='margin:4px 0'><input type='number' class='numin' step='any' id='pr" + i + "' style='width:110px'> " + p.unit +
+      " <button class='nav' id='prb" + i + "'>判定</button> <span class='fb' id='prf" + i + "'></span></div>" +
+      "<details><summary>答えと計算方法</summary>答え: " + fmt(p.ans, p.dec) + " " + p.unit + "　" + p.how + "</details>";
+  });
+  dEl("practice").innerHTML = html;
+  PRACTICE.forEach(function (p, i) {
+    dEl("prb" + i).addEventListener("click", function () {
+      const v = parseFloat(dEl("pr" + i).value), fb = dEl("prf" + i);
+      if (isNaN(v)) { fb.className = "fb ng"; fb.textContent = "数値を入力してください"; return; }
+      if (Math.abs(v - p.ans) <= p.tol) { fb.className = "fb ok"; fb.textContent = "正解！（" + fmt(p.ans, p.dec) + " " + p.unit + "）"; }
+      else { fb.className = "fb ng"; fb.textContent = "ちがいます。下側確率・上側確率・パーセント点のどれを求める問題か確認しましょう" + (p.unit === "%" ? "（% で入力します）" : ""); }
+    });
+  });
+})();
+
+/* ============ 4a. 標準正規分布表 ============ */
+function eZTable() {
+  let html = "<table class='dist'><tr><th>z</th>";
+  for (let c = 0; c < 10; c++) html += "<th id='ezc" + c + "'>0.0" + c + "</th>";
+  html += "</tr>";
+  for (let r = 0; r < 35; r++) {
+    html += "<tr id='ezr" + r + "'><td class='rh'>" + (r / 10).toFixed(1) + "</td>";
+    for (let c = 0; c < 10; c++) { const z = r / 10 + c / 100; html += "<td class='clickable' data-r='" + r + "' data-c='" + c + "'>" + (1 - pnorm(z, 0, 1)).toFixed(5) + "</td>"; }
+    html += "</tr>";
+  }
+  html += "</table>";
+  dEl("eZTableBox").innerHTML = html;
+  dEl("eZTableBox").addEventListener("click", function (ev) {
+    const td = ev.target.closest("td.clickable"); if (!td) return;
+    eZ.set(+td.dataset.r / 10 + +td.dataset.c / 100); eZDraw(false);
+  });
+}
+function eZDraw(scroll) {
+  const z = eZ.get(), r = Math.floor(Math.round(z * 100) / 10), c = Math.round(z * 100) % 10, p = 1 - pnorm(z, 0, 1);
+  Array.prototype.forEach.call(document.querySelectorAll("#eZTableBox .hl-line, #eZTableBox .hl-head, #eZTableBox .hl-cell"), function (el) { el.classList.remove("hl-line", "hl-head", "hl-cell"); });
+  const row = dEl("ezr" + r);
+  if (row) {
+    Array.prototype.forEach.call(row.children, function (td) { td.classList.add("hl-line"); });
+    row.children[0].classList.add("hl-head"); dEl("ezc" + c).classList.add("hl-head");
+    Array.prototype.forEach.call(document.querySelectorAll("#eZTableBox td[data-c='" + c + "']"), function (td) { td.classList.add("hl-line"); });
+    row.children[c + 1].classList.add("hl-cell");
+    if (scroll !== false) { const box = dEl("eZTableBox"); box.scrollTop = row.offsetTop - box.clientHeight / 2; }
+  }
+  dEl("eZReadout").innerHTML = "<span class='big'>P(Z ≥ " + z.toFixed(2) + ") = <b>" + p.toFixed(6) + "</b>（" + pct(p, 3) + "）</span>　表では <b>行 " + (r / 10).toFixed(1) + "</b> と <b>列 0.0" + c + "</b> の交わるセル。下側確率は 1 − " + p.toFixed(5) + " = " + (1 - p).toFixed(5) +
+    "<div class='formula'><span class='lab'>Excel</span>=1-NORM.S.DIST(" + z.toFixed(2) + ",TRUE)<br><span class='lab'>R</span>pnorm(" + z.toFixed(2) + ", lower.tail = FALSE)</div>";
+  const cv = setupCanvas(dEl("eZCanvas")), ctx = cv.ctx;
+  const f = function (x) { return dnorm(x, 0, 1); };
+  const sc = frame(ctx, cv.w, cv.h, [-4, 4, 0, 0.45], { yfmt: function (t) { return trimNum(t); } });
+  fillArea(ctx, sc, f, z, 4, "rgba(43,108,176,0.4)");
+  curve(ctx, sc, f, -4, 4, "#1a1a1a", 2);
+  vline(ctx, sc, z, "#2b6cb0");
+}
+const eZ = linkNumeric("eZ", function () { eZDraw(); });
+
+/* ============ 4b. t分布 ============ */
+const T_DFS = []; for (let d = 1; d <= 30; d++) T_DFS.push(d); T_DFS.push(40, 60, 120, Infinity);
+const T_ALPHAS = [0.1, 0.05, 0.025, 0.01, 0.005];
+function eTTable() {
+  let html = "<table class='dist'><tr><th>自由度</th>";
+  T_ALPHAS.forEach(function (a, c) { html += "<th id='etc" + c + "'>" + a + "</th>"; });
+  html += "</tr>";
+  T_DFS.forEach(function (d, r) {
+    html += "<tr id='etr" + r + "'><td class='rh'>" + (d === Infinity ? "∞" : d) + "</td>";
+    T_ALPHAS.forEach(function (a) { html += "<td>" + (d === Infinity ? qnormStd(1 - a) : qt(1 - a, d)).toFixed(3) + "</td>"; });
+    html += "</tr>";
+  });
+  html += "</table>";
+  dEl("eTTableBox").innerHTML = html;
+}
+function eTDraw() {
+  const df = eDf.get(), a = +radioVal("eAlpha"), c = T_ALPHAS.indexOf(a);
+  const tq = qt(1 - a, df), zq = qnormStd(1 - a);
+  Array.prototype.forEach.call(document.querySelectorAll("#eTTableBox .hl-line, #eTTableBox .hl-head, #eTTableBox .hl-cell"), function (el) { el.classList.remove("hl-line", "hl-head", "hl-cell"); });
+  const r = T_DFS.indexOf(df);
+  dEl("etc" + c).classList.add("hl-head");
+  if (r >= 0) {
+    const row = dEl("etr" + r);
+    Array.prototype.forEach.call(row.children, function (td) { td.classList.add("hl-line"); });
+    row.children[0].classList.add("hl-head"); row.children[c + 1].classList.add("hl-cell");
+    const box = dEl("eTTableBox"); box.scrollTop = row.offsetTop - box.clientHeight / 2;
+  }
+  dEl("eTReadout").innerHTML = "<span class='big'>自由度 " + df + " の t 分布の上側 " + (a * 100) + "% 点 = <b>" + tq.toFixed(4) + "</b></span>　（標準正規分布では " + zq.toFixed(4) + "）" +
+    (r < 0 ? "<br><span class='caption'>自由度 " + df + " は表にないので，表の近い自由度の値を参考にするか，コンピュータで計算します。</span>" : "") +
+    "<div class='formula'><span class='lab'>Excel</span>=T.INV(" + String(+(1 - a).toFixed(3)) + "," + df + ")<br><span class='lab'>R</span>qt(" + a + ", df = " + df + ", lower.tail = FALSE)</div>";
+  const cv = setupCanvas(dEl("eTCanvas")), ctx = cv.ctx;
+  const ft = function (x) { return dt(x, df); }, fz = function (x) { return dnorm(x, 0, 1); };
+  const sc = frame(ctx, cv.w, cv.h, [-5, 5, 0, 0.45], { yfmt: function (t) { return trimNum(t); } });
+  fillArea(ctx, sc, ft, Math.min(tq, 5), 5, "rgba(43,108,176,0.35)");
+  curve(ctx, sc, fz, -5, 5, "#8a8a8a", 2, [6, 4]);
+  curve(ctx, sc, ft, -5, 5, "#2b6cb0", 2.5);
+  vline(ctx, sc, zq, "#8a8a8a", [6, 4]);
+  if (tq <= 5) vline(ctx, sc, tq, "#2b6cb0");
+  ctx.font = "12px 'Segoe UI', sans-serif"; ctx.textBaseline = "top";
+  ctx.fillStyle = "#2b6cb0"; ctx.textAlign = "left"; ctx.fillText("t: " + tq.toFixed(3), sc.sx(Math.min(tq, 5)) + 4, sc.y1 + 4);
+  ctx.fillStyle = "#666"; ctx.textAlign = "right"; ctx.fillText("正規: " + zq.toFixed(3), sc.sx(zq) - 4, sc.y1 + 22);
+}
+const eDf = linkNumeric("eDf", eTDraw);
+onRadio("eAlpha", eTDraw);
+
+/* ============ 予想ボックス（クリッカー連携） ============ */
+function wirePredicts() {
+  Object.keys(CLICKER).forEach(function (q) {
+    const radios = document.querySelectorAll('input[name="' + q + '"]');
+    const pick = document.getElementById(q + "pick");
+    /* 予想を選ぶまで解説を開けないようにする */
+    const det = pick.closest(".predict").querySelector("details"), sum = det ? det.querySelector("summary") : null;
+    const orig = sum ? sum.textContent : "";
+    function unlock() { if (det && det.classList.contains("locked")) { det.classList.remove("locked"); sum.textContent = orig; } }
+    if (sum) {
+      det.classList.add("locked"); sum.textContent = "解説（予想を選ぶと開けます）";
+      sum.addEventListener("click", function (e) { if (det.classList.contains("locked")) { e.preventDefault(); pick.textContent = "先に予想を選びましょう"; } });
+    }
+    Array.prototype.forEach.call(radios, function (el) {
+      if (el.checked) unlock();
+      el.addEventListener("change", function () {
+        const label = el.parentNode.textContent.trim();
+        pick.textContent = "あなたの予想: 「" + label + "」— 動かして確かめよう";
+        unlock();
+      });
+    });
+    const holder = document.getElementById(q + "clicker");
+    if (holder && CLICKER[q]) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "clicker"; b.textContent = "クリッカーで回答する";
+      b.addEventListener("click", function () { window.open(CLICKER[q], "_blank"); });
+      holder.appendChild(b);
+    }
+  });
+}
+
+/* ============ 初期描画 ============ */
+wirePredicts();
+bReset();
+cResample();
+dParamsChanged(false); dSetAB(167, 177); dDraw();
+eZTable(); eZDraw();
+eTTable(); eTDraw();
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 試験公開中は検索エンジンに載せない（正式公開のときにこの行を消す） -->
+<meta name="robots" content="noindex">
+<title>統計学の体験教材</title>
+<style>
+  :root { --ink:#222; --sub:#555; --line:#ddd; --panel:#f4f6f8; --blue:#2b6cb0; }
+  body { margin:0; background:#fff; color:var(--ink); font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif; line-height:1.8; }
+  main { max-width:760px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:1.6rem; margin:8px 0 4px; }
+  .lead { color:var(--sub); margin:0 0 20px; }
+  .note { background:var(--panel); border-left:4px solid var(--blue); border-radius:6px; padding:10px 14px; font-size:.93rem; margin:0 0 24px; }
+  .note p { margin:2px 0; }
+  h2 { font-size:1.15rem; border-bottom:2px solid var(--line); padding-bottom:4px; margin:28px 0 12px; }
+  a.card { display:block; border:1px solid var(--line); border-radius:8px; padding:12px 16px; margin:0 0 12px; text-decoration:none; color:var(--ink); }
+  a.card:hover { border-color:var(--blue); background:#f8fbff; }
+  a.card .t { font-weight:700; color:var(--blue); font-size:1.05rem; }
+  a.card .d { font-size:.93rem; color:var(--sub); margin-top:2px; }
+  footer { color:#888; font-size:.85rem; margin-top:36px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>統計学の体験教材</h1>
+  <p class="lead">確率分布・推測統計・統計的検定の考え方を，予想して，動かして確かめる教材です。</p>
+
+  <div class="note">
+    <p>ソフトのインストールは不要です。ブラウザ（Chrome・Edge・Safari・Firefox）で開くだけで使えます。</p>
+    <p>スマートフォンでは，画面を<b>横向き</b>にするとグラフが見やすくなります。</p>
+    <p>各節の「予想しよう」で答えを選ぶと，解説が開けるようになります。</p>
+  </div>
+
+  <h2>1. 確率分布と推測統計</h2>
+  <a class="card" href="prob_demo.html">
+    <div class="t">確率分布の応用</div>
+    <div class="d">二項分布，ヒストグラムと確率密度，正規分布，分布表と t 分布</div>
+  </a>
+  <a class="card" href="si_demo.html">
+    <div class="t">推測統計の直感的理解</div>
+    <div class="d">架空の国の10万人の名簿から標本を抽出して，標本抽出法，大数の法則，中心極限定理，信頼区間を確かめる</div>
+  </a>
+
+  <h2>2. 統計的検定</h2>
+  <a class="card" href="test_demo.html">
+    <div class="t">統計的検定の考え方</div>
+    <div class="d">P値，αエラーとβエラー，検出力，検定と診断検査，信頼区間との対応，P値と効果の大きさ</div>
+  </a>
+
+  <footer>教材中のデータはすべて架空のものです。</footer>
+</main>
+</body>
+</html>

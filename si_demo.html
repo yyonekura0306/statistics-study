@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>推測統計の直感的理解</title>
+<style>
+  :root { --blue:#2b6cb0; --gray:#8a8a8a; --red:#d13438; --bg:#ffffff; --fg:#1a1a1a; --muted:#666; --line:#ddd; --panel:#f6f7f9; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Segoe UI","Hiragino Sans","Meiryo",system-ui,sans-serif; color:var(--fg); background:var(--bg); line-height:1.75; }
+  .wrap { max-width:860px; margin:0 auto; padding:24px 20px 90px; }
+  h1 { font-size:1.6rem; margin:0 0 4px; }
+  h2 { font-size:1.28rem; margin:46px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--line); }
+  p { margin:10px 0; }
+  .note { background:var(--panel); border-left:4px solid var(--blue); padding:12px 16px; border-radius:4px; color:#333; font-size:.95rem; }
+  .controls { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin:14px 0; }
+  .row { display:flex; align-items:center; gap:12px; margin:10px 0; flex-wrap:wrap; }
+  .row label.name { min-width:150px; font-weight:600; font-size:.95rem; }
+  input[type=range] { flex:1; min-width:160px; accent-color:var(--blue); }
+  .stepper { display:inline-flex; align-items:center; gap:6px; }
+  .stepper button { width:34px; height:34px; padding:0; font-size:1.2rem; line-height:1; background:#fff; color:var(--blue); border:1px solid var(--blue); border-radius:6px; cursor:pointer; }
+  .stepper button:hover { background:var(--blue); color:#fff; }
+  .stepper input[type=number] { width:82px; height:34px; text-align:center; font-size:1rem; font-variant-numeric:tabular-nums; border:1px solid #bbb; border-radius:6px; }
+  button.roll, button.nav { background:var(--blue); color:#fff; border:none; border-radius:6px; padding:9px 18px; font-size:.95rem; cursor:pointer; }
+  button.roll:hover, button.nav:hover { background:#255a97; }
+  button.nav { padding:7px 14px; }
+  .radio { display:inline-flex; gap:16px; flex-wrap:wrap; }
+  .radio label { cursor:pointer; }
+  canvas { display:block; max-width:100%; margin:6px 0; }
+  .readout { font-size:.98rem; margin:10px 0 4px; }
+  .readout b { color:var(--blue); }
+  .caption { color:var(--muted); font-size:.9rem; margin:14px 0 2px; }
+  table.roster { border-collapse:collapse; margin:10px 0; font-size:.93rem; width:100%; }
+  table.roster th, table.roster td { border:1px solid var(--line); padding:5px 10px; text-align:right; font-variant-numeric:tabular-nums; }
+  table.roster th { background:var(--panel); text-align:center; font-weight:600; }
+  table.roster td.c { text-align:center; }
+  .pageinfo { color:var(--muted); font-size:.92rem; }
+  #jumpId { width:100px; height:34px; text-align:center; border:1px solid #bbb; border-radius:6px; font-size:1rem; }
+  h3 { font-size:1.08rem; margin:32px 0 8px; }
+  .predict { background:#fff8e7; border:1px solid #e8cf7d; border-left:4px solid #d9a400; border-radius:8px; padding:12px 16px; margin:16px 0; }
+  .predict .q { font-weight:600; }
+  .predict .opts { display:flex; flex-direction:column; gap:2px; margin:6px 0; }
+  .predict .opts label { cursor:pointer; }
+  .predict .mypick { color:#8a6d00; font-size:.92rem; min-height:1.2em; }
+  .predict .howto { font-size:.92rem; margin:6px 0 0; padding:6px 10px; background:#fff; border:1px dashed #e8cf7d; border-radius:6px; }
+  .predict .howto b { color:#8a6d00; }
+  .predict details { margin-top:6px; }
+  .predict summary { cursor:pointer; color:var(--blue); font-weight:600; font-size:.95rem; }
+  .predict details p { margin:6px 0 2px; font-size:.95rem; }
+  .predict details.locked summary { color:#8a8a8a; cursor:not-allowed; }
+  button.clicker { background:#d9a400; color:#fff; border:none; border-radius:6px; padding:6px 14px; font-size:.9rem; cursor:pointer; margin-top:4px; }
+  button.clicker:hover { background:#b88900; }
+  ul.methods { margin:8px 0; padding-left:22px; }
+  ul.methods li { margin:4px 0; }
+  ul.real { margin:10px 0; padding-left:22px; }
+  ul.real li { margin:8px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>推測統計の直感的理解</h1>
+  <p class="note">この教材では、まず<b>「ある架空の国の成人10万人の名簿」</b>という母集団を実際に眺めるところから始めます。
+  そのあとのすべてのシミュレーションは、<b>この名簿から実際に人を抜き出す（標本抽出する）</b>ことで行います。
+  スライダー・数値の直接入力・<b>［−］［＋］</b>ボタンで値を変えられます。ソフトのインストール・ネット接続は不要です。</p>
+
+  <!-- ============ 0. 母集団 ============ -->
+  <h2>0. 母集団: ある国の成人10万人の名簿</h2>
+  <p>ある架空の国に、20歳以上の成人がちょうど10万人（男性5万人・女性5万人）住んでいるとします。
+  下の表は、その<b>全員の名簿</b>です。1人ずつに ID がふられ、性別・身長・体重・住んでいる地域（東地域／西地域）・市町村（全部で1000市町村、各100人）・昨年1年間に外来を受診した回数が記録されています。
+  ページをめくったり、ID を指定したりして、<b>一人ひとりのデータが実際に存在する</b>ことを確かめてください。</p>
+  <p class="caption">※ このデータは2018年国民健康・栄養調査の平均・標準偏差に合わせて乱数で作った架空のものです。ただし全員分が固定されており、誰がいつ開いても同じ名簿になります。</p>
+
+  <div class="controls">
+    <div class="row">
+      <button class="nav" id="pgFirst">最初へ</button>
+      <button class="nav" id="pgPrev">← 前の10人</button>
+      <button class="nav" id="pgNext">次の10人 →</button>
+      <span class="pageinfo" id="pageInfo"></span>
+    </div>
+    <div class="row">
+      <label class="name" for="jumpId">ID を指定して表示</label>
+      <input type="number" id="jumpId" min="1" max="100000" step="1" value="1">
+      <button class="nav" id="jumpBtn">表示</button>
+    </div>
+  </div>
+  <div id="rosterTable"></div>
+
+  <p>名簿<b>全員</b>について集計した「母集団の要約統計量」は次のとおりです。以降のデモに出てくる「母平均」とは、この表の値のことです。</p>
+  <div id="popSummary"></div>
+
+  <p>母集団の分布をヒストグラムで見てみましょう。身長は左右対称の釣り鐘型ですが、外来受診回数は<b>右に裾を引いた歪んだ分布</b>です。</p>
+  <div class="controls">
+    <div class="row"><label class="name">表示する変数</label>
+      <span class="radio">
+        <label><input type="radio" name="popvar" value="mh" checked> 身長（男性）</label>
+        <label><input type="radio" name="popvar" value="fh"> 身長（女性）</label>
+        <label><input type="radio" name="popvar" value="vis"> 外来受診回数（全員）</label>
+      </span></div>
+  </div>
+  <canvas id="popCanvas" width="780" height="240"></canvas>
+
+  <!-- ============ 1. 標本抽出法 ============ -->
+  <h2>1. 標本抽出の方法と標本誤差・偏り</h2>
+  <p>名簿全員を調べる（全数調査）のは大変なので、一部の人を選んで調べ（標本調査）、その平均から母集団の平均（母平均）を推定します。
+  ここでは、次の4つの方法で標本を選び、推定値がどうなるかを比べます。</p>
+  <ul class="methods">
+    <li><b>単純無作為抽出</b>: 名簿全員から、くじ引きで n 人を選ぶ</li>
+    <li><b>系統抽出</b>: 名簿の中で出発点をくじで決め、そこから k 人おき（k = 100,000 ÷ n）に選ぶ</li>
+    <li><b>集落抽出</b>: 1000の市町村（各100人）から n ÷ 100 個の市町村をくじで選び、その住民全員を調べる</li>
+    <li><b>便宜的抽出</b>: 病院の外来の待合室にいる人に声をかけて n 人集める（待合室で出会う確率は、その人の年間受診回数に比例するとします）</li>
+  </ul>
+  <div class="predict">
+    <div class="q">予想しよう Q1：便宜的抽出（外来の待合室）で集めた標本の平均受診回数は，母平均（約4.5回）と比べてどうなる？</div>
+    <div class="opts">
+      <label><input type="radio" name="q1" value="1"> 母平均とほぼ同じになる</label>
+      <label><input type="radio" name="q1" value="2"> 母平均より大きくなる</label>
+      <label><input type="radio" name="q1" value="3"> 母平均より小さくなる</label>
+    </div>
+    <div class="mypick" id="q1pick"></div>
+    <span id="q1clicker"></span>
+    <div class="howto"><b>確かめ方：</b>Q3の下の操作欄で「調べる変数」を「外来受診回数（全員）」にして「100回繰り返す」を押し，表の便宜的抽出の「推定値の平均」を母平均と比べます。</div>
+    <details><summary>解説（動かして確かめてから開こう）</summary>
+      <p>答えは「大きくなる」（約2倍）。受診回数の多い人ほど待合室にいることが多いので選ばれやすく，受診0回の人は1人も選ばれません。しかも<b>何回抽出しなおしても同じ方向にずれ，n を増やしてもずれは小さくなりません</b>。これが<b>偏り（バイアス）</b>で，偶然のずれである標本誤差とは別物です。一方，調べる変数を「身長」にすると便宜的抽出でも偏りはほとんど出ません（この名簿では受診回数と身長が無関係なため）。偏りが出るかどうかは，<b>選ばれやすさと調べたい変数が関係しているか</b>で決まります。現実には，選ばれやすさがどの変数と関係しているかは分からないことがほとんどです。</p>
+    </details>
+  </div>
+  <div class="predict">
+    <div class="q">予想しよう Q2：名簿を「男・女・男・女…」と交互に並べ替えてから，1000人おきに100人を系統抽出すると（n = 100，k = 1000），全員の平均身長（約161 cm）の推定値はどうなる？</div>
+    <div class="opts">
+      <label><input type="radio" name="q2" value="1"> 母平均（約161 cm）の近くに集まる</label>
+      <label><input type="radio" name="q2" value="2"> 男性の平均か女性の平均のどちらかに近い値に分かれる</label>
+      <label><input type="radio" name="q2" value="3"> 単純無作為抽出よりばらつきが小さくなる</label>
+    </div>
+    <div class="mypick" id="q2pick"></div>
+    <span id="q2clicker"></span>
+    <div class="howto"><b>確かめ方：</b>Q3の下の操作欄で「調べる変数」を「身長（全員）」，「標本サイズ n」を「100人」，「系統抽出に使う名簿」を「男女交互に並べ替えた名簿」にして「100回繰り返す」を押し，系統抽出の点の分布と「最新の標本の男性の割合」を見ます。</div>
+    <details><summary>解説（動かして確かめてから開こう）</summary>
+      <p>答えは「どちらかに分かれる」。間隔 k = 1000 は偶数なので，出発点が男性なら全員男性，女性なら全員女性が選ばれます。一方，n = 800 では間隔 k = 125 が奇数になるので，男女が交互に選ばれてちょうど半々になり，この偏りは起こりません。「調べる変数」を身長，「系統抽出に使う名簿」を男女交互にして，n = 100 と n = 800 で「最新の標本の男性の割合」と点の分布を比べてみましょう。なお，n = 800 では系統抽出の推定値のばらつきが単純無作為抽出より小さくなります。男女がちょうど半々に固定され，男女比の偶然の偏りがなくなるためです（n = 100 の Q2 では，3つ目の選択肢は正解になりません）。<b>名簿の並びに規則性があり，その周期と抽出間隔がかみ合うと</b>，系統抽出は大きく偏ります。並びがランダムな「ID順」の名簿なら，系統抽出は単純無作為抽出とほぼ同じ結果になります。</p>
+    </details>
+  </div>
+  <div class="predict">
+    <div class="q">予想しよう Q3：同じ n = 100 人を調べるとき，平均受診回数の推定値のばらつき（標準偏差）が大きいのは？<br>
+      <span style="font-weight:400">（受診回数そのもののばらつきではなく，100人のデータから推定した平均が，抽出のたびにどれだけばらつくかであることに注意）</span></div>
+    <div class="opts">
+      <label><input type="radio" name="q3" value="1"> 単純無作為抽出（10万人からばらばらに100人）</label>
+      <label><input type="radio" name="q3" value="2"> 集落抽出（1つの市町村の100人全員）</label>
+      <label><input type="radio" name="q3" value="3"> どちらも同じくらい</label>
+    </div>
+    <div class="mypick" id="q3pick"></div>
+    <span id="q3clicker"></span>
+    <div class="howto"><b>確かめ方：</b>下の「調べる変数」を「外来受診回数（全員）」，「標本サイズ n」を「100人」にして「100回繰り返す」を押し，表の「推定値の標準偏差（ばらつき）」を4つの方法で比べます。</div>
+    <details><summary>解説（動かして確かめてから開こう）</summary>
+      <p>答えは「集落抽出」（この名簿では約2.6倍）。同じ市町村の住民は，医療機関へのアクセスなどが共通しているため受診回数が似ています。似た人を100人集めても，実質的な情報量は100人分より少なくなります。集落抽出は名簿がなくても実施できる利点がありますが，同じ精度を得るには単純無作為抽出より多くの人数が必要です。偏りは出ないことにも注目してください（推定値の平均は母平均に一致します）。なお，このような推定値のばらつき（標準偏差）を<b>標準誤差</b>と呼びます。標準誤差については，このあとの「3. 中心極限定理」で詳しく扱います。</p>
+    </details>
+  </div>
+  <div class="controls">
+    <div class="row"><label class="name">調べる変数</label>
+      <span class="radio">
+        <label><input type="radio" name="aVar" value="vis" checked> 外来受診回数（全員）</label>
+        <label><input type="radio" name="aVar" value="h"> 身長（全員）</label>
+      </span></div>
+    <div class="row"><label class="name">標本サイズ n</label>
+      <span class="radio">
+        <label><input type="radio" name="aN" value="100" checked> 100人</label>
+        <label><input type="radio" name="aN" value="200"> 200人</label>
+        <label><input type="radio" name="aN" value="500"> 500人</label>
+        <label><input type="radio" name="aN" value="800"> 800人</label>
+        <label><input type="radio" name="aN" value="1000"> 1000人</label>
+      </span></div>
+    <div class="row"><label class="name">系統抽出に使う名簿</label>
+      <span class="radio">
+        <label><input type="radio" name="aOrder" value="id" checked> ID順（並びはランダム）</label>
+        <label><input type="radio" name="aOrder" value="alt"> 男女交互に並べ替えた名簿</label>
+      </span></div>
+    <div class="row">
+      <button class="roll" id="aOnce">4つの方法で1回ずつ抽出</button>
+      <button class="nav" id="a100">100回繰り返す</button>
+      <button class="nav" id="aReset">リセット</button>
+    </div>
+    <p class="caption" style="margin:4px 0 0;">設定を変えると，それまでの結果はリセットされます。</p>
+  </div>
+  <div class="readout" id="aReadout"></div>
+  <div class="caption">各回の標本平均（赤い線が母平均，大きな点が最新の1回）</div>
+  <canvas id="aCanvas" width="780" height="320"></canvas>
+  <div id="aTable"></div>
+
+  <!-- ============ 2. 大数の法則 ============ -->
+  <h2>2. 大数の法則</h2>
+  <p>名簿の<b>男性5万人</b>から、くじ引きのように何人かを選び出し（無作為抽出）、その人たちの平均身長（標本平均）を計算します。
+  選び出す人数 n によって、標本平均と母平均の関係はどう変わるでしょうか。</p>
+  <div class="predict">
+    <div class="q">予想しよう Q4：10人の平均身長と1000人の平均身長，母平均（168.0 cm）に近いことが多いのはどちら？</div>
+    <div class="opts">
+      <label><input type="radio" name="q4" value="1"> 10人の平均のほう</label>
+      <label><input type="radio" name="q4" value="2"> 1000人の平均のほう</label>
+      <label><input type="radio" name="q4" value="3"> どちらも同じくらい</label>
+    </div>
+    <div class="mypick" id="q4pick"></div>
+    <span id="q4clicker"></span>
+    <div class="howto"><b>確かめ方：</b>下の「2a. 対決」で「1回対決する」や「100回まとめて」を押し，どちらの平均が母平均に近かったかの回数を数えます。</div>
+    <details><summary>解説（動かして確かめてから開こう）</summary>
+      <p>答えは「1000人の平均のほう」。ただし<b>毎回必ず近いわけではなく，「多くの場合」近い</b>のがポイントです。n=10 でも偶然ほぼ 168.0 cm になることはあるし，n=1000 でも少しはずれます。大数の法則は「保証」ではなく，n が大きいほどブレが小さくなるという<b>傾向</b>です。下の「2a. 対決」で何回も対決すると，10人の平均が勝つ回数は少ないものの，ゼロにはならないことが分かります。</p>
+    </details>
+  </div>
+  <h3>2a. 対決：10人の平均 vs 1000人の平均</h3>
+  <p>Q4 の予想を確かめましょう。「対決する」を押すと、名簿の男性から <b>10人</b>と<b>1000人</b>をそれぞれ抽出して平均身長を計算し、
+  <b>どちらが母平均（赤い線）に近かったか</b>を判定します。何回も対決して、勝敗の数と点の散らばり方を比べてみましょう。</p>
+  <div class="controls">
+    <div class="row">
+      <button class="roll" id="duelOnce">1回対決する</button>
+      <button class="nav" id="duel10">10回まとめて</button>
+      <button class="nav" id="duel100">100回まとめて</button>
+      <button class="nav" id="duelReset">リセット</button>
+    </div>
+  </div>
+  <div class="readout" id="duelReadout"></div>
+  <div class="caption">各対決で計算した平均身長（大きな点と線は最新の1回）</div>
+  <canvas id="duelCanvas" width="780" height="320"></canvas>
+
+  <h3>2b. 抽出する人数を増やしていくと</h3>
+  <p>今度は n 人を実際に抽出して、その平均身長を計算します。
+  下の表に<b>今回実際に選ばれた人</b>が表示されるので、確かに名簿の中の実在の行が選ばれていることを確かめてください。
+  n を増やしていくと、標本平均と母平均 <span id="llnMuLabel"></span>（赤い線）の関係がどう変わるかを観察しましょう。</p>
+  <div class="controls">
+    <div class="row">
+      <label class="name" for="llnNRange">抽出する人数 n</label>
+      <input type="range" id="llnNRange" min="1" max="3000" step="1" value="10">
+      <span class="stepper"><button type="button" id="llnNMinus">−</button>
+        <input type="number" id="llnNNum" min="1" max="3000" step="1" value="10">
+        <button type="button" id="llnNPlus">＋</button></span>
+    </div>
+    <div class="row"><button class="roll" id="llnRoll">抽出しなおす</button></div>
+  </div>
+  <div class="caption">今回選ばれた人（名簿からの実際の抽出結果）</div>
+  <div id="llnSampleTable"></div>
+  <div class="readout" id="llnReadout"></div>
+  <div class="caption">抽出した人数を 1 人ずつ増やしながら計算しなおした平均身長の推移（横軸は対数目盛）</div>
+  <canvas id="llnCanvas" width="780" height="320"></canvas>
+
+  <!-- ============ 3. 中心極限定理 ============ -->
+  <h2>3. 中心極限定理</h2>
+  <p>「名簿から n 人を抽出して平均を計算する」ことを何回も繰り返し、得られた<b>標本平均の分布</b>をヒストグラムにします。
+  赤い曲線は比較のための正規分布です。
+  変数を「外来受診回数」（右に歪んだ分布）にして、n を 1 → 2 → 10 → 50 と増やしたとき、標本平均の分布の形とばらつきがどう変わるかを観察しましょう。</p>
+  <div class="predict">
+    <div class="q">予想しよう Q5：右に歪んだ「外来受診回数」から n=50 人の平均を2000回計算したとき，標本平均のヒストグラムはどんな形になる？</div>
+    <div class="opts">
+      <label><input type="radio" name="q5" value="1"> 母集団と同じように右に歪む</label>
+      <label><input type="radio" name="q5" value="2"> 左右対称の釣り鐘型に近づく</label>
+      <label><input type="radio" name="q5" value="3"> 平らになる（どの値も同じくらい）</label>
+    </div>
+    <div class="mypick" id="q5pick"></div>
+    <span id="q5clicker"></span>
+    <div class="howto"><b>確かめ方：</b>下の「調べる変数」を「外来受診回数（全員）」，「標本サイズ n」を 50 にして，標本平均のヒストグラムの形を見ます。</div>
+    <details><summary>解説（動かして確かめてから開こう）</summary>
+      <p>答えは「左右対称の釣り鐘型」。<b>母集団の形がどうであれ</b>，n が大きくなると標本平均の分布は正規分布に近づき，そのばらつき（標準誤差）は σ/√n に一致します（中心極限定理）。逆に n=1 にすると標本平均の分布は母集団の形そのものになり，n=2〜5 では歪みが残ります。n を 1 から少しずつ増やして，歪みが消えていく様子を観察しましょう。</p>
+    </details>
+  </div>
+  <div class="controls">
+    <div class="row"><label class="name">調べる変数</label>
+      <span class="radio">
+        <label><input type="radio" name="cltvar" value="mh"> 身長（男性）</label>
+        <label><input type="radio" name="cltvar" value="vis" checked> 外来受診回数（全員）</label>
+      </span></div>
+    <div class="row">
+      <label class="name" for="cltNRange">標本サイズ n</label>
+      <input type="range" id="cltNRange" min="1" max="100" step="1" value="2">
+      <span class="stepper"><button type="button" id="cltNMinus">−</button>
+        <input type="number" id="cltNNum" min="1" max="100" step="1" value="2">
+        <button type="button" id="cltNPlus">＋</button></span>
+    </div>
+    <div class="row">
+      <label class="name" for="cltRepsRange">抽出の繰り返し回数</label>
+      <input type="range" id="cltRepsRange" min="200" max="5000" step="100" value="2000">
+      <span class="stepper"><button type="button" id="cltRepsMinus">−</button>
+        <input type="number" id="cltRepsNum" min="200" max="5000" step="100" value="2000">
+        <button type="button" id="cltRepsPlus">＋</button></span>
+    </div>
+    <div class="row"><button class="roll" id="cltRoll">抽出しなおす</button></div>
+  </div>
+  <div class="caption">母集団（名簿全員）の分布</div>
+  <canvas id="cltPopCanvas" width="780" height="200"></canvas>
+  <div class="caption">標本平均の分布（赤い曲線＝理論上の正規分布, 赤い破線＝母平均）</div>
+  <canvas id="cltMeansCanvas" width="780" height="320"></canvas>
+  <div class="readout" id="cltReadout"></div>
+
+  <!-- ============ 4. 信頼区間 ============ -->
+  <h2>4. 信頼区間の性質</h2>
+  <p>名簿の男性から n 人を抽出して <b>95%信頼区間</b>を作る、という操作を何本も繰り返します。
+  赤い水平線が母平均（名簿の男性5万人全員の平均身長）、縦線が各標本から計算した95%信頼区間で、
+  <b>母平均を含む区間は青、含まない区間は赤</b>です。
+  母平均を含む区間が何本あるかを数えて、「95%信頼区間」の「95%」が何を意味しているのかを考えましょう。</p>
+  <div class="predict">
+    <div class="q">予想しよう Q6：95%信頼区間を100本作ったとき，母平均を含む区間は何本くらい？</div>
+    <div class="opts">
+      <label><input type="radio" name="q6" value="1"> 100本すべて</label>
+      <label><input type="radio" name="q6" value="2"> 約95本</label>
+      <label><input type="radio" name="q6" value="3"> 約50本</label>
+    </div>
+    <div class="mypick" id="q6pick"></div>
+    <span id="q6clicker"></span>
+    <div class="howto"><b>確かめ方：</b>下の「区間の本数」を 100 にして，グラフの下に表示される「母平均を含む区間」の本数を見ます。「抽出しなおす」を何回か押しましょう。</div>
+    <details><summary>解説（動かして確かめてから開こう）</summary>
+      <p>答えは「約95本」。ただし「抽出しなおす」を押すたびに 92本になったり 98本になったりと揺らぎます。<b>「95%」は1本1本の区間の性質ではなく，標本を取り直して区間を計算することを繰り返したときの的中率</b>です。ここを取り違えると「母平均がこの区間に入る確率は95%」という誤読につながります。</p>
+    </details>
+  </div>
+  <div class="controls">
+    <div class="row">
+      <label class="name" for="ciNRange">標本サイズ n</label>
+      <input type="range" id="ciNRange" min="2" max="100" step="1" value="10">
+      <span class="stepper"><button type="button" id="ciNMinus">−</button>
+        <input type="number" id="ciNNum" min="2" max="100" step="1" value="10">
+        <button type="button" id="ciNPlus">＋</button></span>
+    </div>
+    <div class="row">
+      <label class="name" for="ciKRange">区間の本数</label>
+      <input type="range" id="ciKRange" min="10" max="200" step="10" value="100">
+      <span class="stepper"><button type="button" id="ciKMinus">−</button>
+        <input type="number" id="ciKNum" min="10" max="200" step="10" value="100">
+        <button type="button" id="ciKPlus">＋</button></span>
+    </div>
+    <div class="row"><button class="roll" id="ciRoll">抽出しなおす</button></div>
+  </div>
+  <canvas id="ciCanvas" width="780" height="340"></canvas>
+  <div class="readout" id="ciReadout"></div>
+
+  <h3>4b. 研究者の視点 — あなたには1本しか見えない</h3>
+  <p>上の図は、母集団も100本の答え合わせも見える<b>「神の視点」</b>でした。しかし現実の研究者が体験できるのは、このうちの<b>たった1回分</b>です。
+  「調査を1回行う」を押して、自分の調査の95%信頼区間を作ってみましょう。<b>母平均の赤い線は表示されません</b>——現実の研究では母平均は見えないからです。</p>
+  <div class="predict">
+    <div class="q">予想しよう Q7：いまあなたが作った1本の区間は，母平均を含んでいるでしょうか？</div>
+    <div class="opts">
+      <label><input type="radio" name="q7" value="1"> 含んでいる</label>
+      <label><input type="radio" name="q7" value="2"> 含んでいない</label>
+      <label><input type="radio" name="q7" value="3"> この画面からは確かめようがない</label>
+    </div>
+    <div class="mypick" id="q7pick"></div>
+    <span id="q7clicker"></span>
+    <div class="howto"><b>確かめ方：</b>下の「調査を1回行う」を押して，自分の95%信頼区間を1本作ります。</div>
+    <details><summary>解説（何回か調査してから開こう）</summary>
+      <p>答えは「確かめようがない」。そして<b>現実の研究では答え合わせは永遠にできません</b>。それでも研究者が信頼区間を使えるのは，無作為抽出などの前提が満たされていれば，<b>標本平均の散らばり方が理論的に分かる</b>からです（3節の中心極限定理）。標本平均の約95%は，母平均から標準誤差の約2倍以内に入ります。これは，「標本平均 ± 標準誤差の約2倍」の区間の約95%が母平均を含むことと同じです。論文の信頼区間を読むときは，「当たりかはずれかは分からないが，当たる確率95%のくじの結果を見ている」と考えます。下の「答え合わせ」ボタンは，このページが練習用の模型だからこそ押せる特別なボタンです。</p>
+    </details>
+  </div>
+  <div class="controls">
+    <div class="row">
+      <button class="roll" id="rmOnce">調査を1回行う（男性 n 人を抽出）</button>
+      <button class="nav" id="rmReveal">答え合わせ（母平均を表示する）</button>
+      <button class="nav" id="rmReset">リセット</button>
+    </div>
+    <p class="caption" style="margin:4px 0 0;">標本サイズ n は上の「標本サイズ n」で設定した値を使います。</p>
+  </div>
+  <canvas id="rmCanvas" width="780" height="300"></canvas>
+  <div class="readout" id="rmReadout"></div>
+
+  <!-- ============ 5. 現実の研究では ============ -->
+  <h2>5. 現実の研究では — このページと本物の研究の違い</h2>
+  <p>このページでは、母集団の名簿がすべて見えていました。だから「母平均は 168.0 cm」と言い切れたし、100本の信頼区間の答え合わせもできました。
+  しかし<b>現実の研究では、多くの場合、このようには見えません</b>。</p>
+  <ul class="real">
+    <li><b>母集団の全員を調べられるとは限らない。</b>母集団が小さければ全員を調べられることもあります。しかし、名簿があっても、費用や労力を考えて一部だけを調べることはよくあります。全員を調べないときは、母平均の値は分からないので、標本から推測します。</li>
+    <li><b>手にできる標本は1つだけ。</b>このページで「抽出しなおす」を押すたびに起きていたことのうち、研究者が体験できるのは1回分だけです。自分の信頼区間が「青か赤か」（4bで体験したとおり）は永遠に分かりません。</li>
+    <li><b>自分の区間の当たりはずれは分からなくても、作り方の的中率は理論で分かっている。</b>信頼区間の95%は「私のこの区間が母平均を含んでいる確率」ではなく、「標本を取り直して区間を計算することを繰り返すと、そのうち約95%が母平均を含む」という作り方の的中率です。</li>
+    <li><b>実際の研究では「名簿」がそもそも存在しないことも多い。</b>これから来院する患者、将来起きる出来事、測るたびに揺らぐ検査値——このような場合、母集団は「データを生み出す仕組み」の比喩です。このページの名簿は、その見えない仕組みを目に見える形にした<b>模型</b>だと考えてください。</li>
+  </ul>
+  <p>論文で信頼区間を読むときは、「この研究は、当たりはずれの分からないくじを1回引いた結果を報告している。ただし、無作為抽出などの前提が満たされていれば、そのくじの当たる確率は分かっている」と考えると、頻度主義統計の意味を取り違えずにすみます。</p>
+
+</div>
+
+<script>
+"use strict";
+
+/* ============ クリッカー連携の設定（任意） ============ */
+/* 授業でウェブクリッカー（Mentimeter, Slido, respon, Google フォームなど）を使う場合は，
+   各設問の「参加用URL」を下の "" の中に貼り付けてください。
+   URLを入れた設問にだけ「クリッカーで回答する」ボタンが表示されます。
+   すべて空欄のままなら何も表示されず，完全オフラインで使えます。 */
+const CLICKER = {
+  q1: "",  // Q1 便宜的抽出の偏り
+  q2: "",  // Q2 系統抽出と名簿の並び
+  q3: "",  // Q3 集落抽出のばらつき
+  q4: "",  // Q4 大数の法則
+  q5: "",  // Q5 中心極限定理
+  q6: "",  // Q6 信頼区間の本数
+  q7: ""   // Q7 研究者の視点（1本の区間）
+};
+
+/* ============ 乱数 ============ */
+/* 母集団生成用: 固定シード（誰が開いても同じ名簿になる） */
+function mulberry32(seed) { let a = seed >>> 0; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+/* 抽出用: 毎回異なる（Math.random） */
+function randn() { let u = 0, v = 0; while (u === 0) u = Math.random(); while (v === 0) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+/* ============ 統計・数値関数 ============ */
+function meanOf(a) { let s = 0; for (let i = 0; i < a.length; i++) s += a[i]; return s / a.length; }
+function varOf(a) { const m = meanOf(a); let s = 0; for (let i = 0; i < a.length; i++) { const d = a[i] - m; s += d * d; } return s / (a.length - 1); }
+function sdOf(a) { return Math.sqrt(varOf(a)); }
+function extent(a) { let lo = Infinity, hi = -Infinity; for (let i = 0; i < a.length; i++) { const x = a[i]; if (x < lo) lo = x; if (x > hi) hi = x; } return [lo, hi]; }
+function fmt(x, d) { return x.toFixed(d == null ? 2 : d); }
+function pct(p, d) { return (100 * p).toFixed(d == null ? 2 : d) + "%"; }
+function randInt(n) { return (Math.random() * n) | 0; }
+function trimNum(t) { return String(+t.toFixed(6)); }
+function radioVal(name) { return document.querySelector('input[name="' + name + '"]:checked').value; }
+function onRadio(name, fn) { Array.prototype.forEach.call(document.querySelectorAll('input[name="' + name + '"]'), function (el) { el.addEventListener("change", fn); }); }
+
+function logGamma(x) {
+  const g = 7, c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - logGamma(1 - x);
+  x -= 1; let a = c[0]; const t = x + g + 0.5;
+  for (let i = 1; i < g + 2; i++) a += c[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+function betacf(a, b, x) {
+  const MAXIT = 300, EPS = 3e-12, FPMIN = 1e-300;
+  let qab = a + b, qap = a + 1, qam = a - 1, c = 1, d = 1 - qab * x / qap;
+  if (Math.abs(d) < FPMIN) d = FPMIN; d = 1 / d; let h = d;
+  for (let m = 1; m <= MAXIT; m++) {
+    const m2 = 2 * m;
+    let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d; h *= d * c;
+    aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d; const del = d * c; h *= del;
+    if (Math.abs(del - 1) < EPS) break;
+  }
+  return h;
+}
+function betai(a, b, x) {
+  if (x <= 0) return 0; if (x >= 1) return 1;
+  const bt = Math.exp(logGamma(a + b) - logGamma(a) - logGamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+  if (x < (a + 1) / (a + b + 2)) return bt * betacf(a, b, x) / a;
+  return 1 - bt * betacf(b, a, 1 - x) / b;
+}
+function tCDF(t, df) { const x = df / (df + t * t); const ib = 0.5 * betai(df / 2, 0.5, x); return t > 0 ? 1 - ib : ib; }
+function qt(p, df) { let lo = -100, hi = 100; for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (tCDF(mid, df) < p) lo = mid; else hi = mid; } return (lo + hi) / 2; }
+
+/* ============ 母集団（名簿）の生成 ============ */
+/* シード181: 男性の平均身長168.0/SD7.1・体重67.3/11.1, 女性154.5/7.0・53.5/9.3 に一致し，
+   男性の東西の平均身長差が0.001cm（事実上ゼロ）になることを確認済み */
+const POP = (function () {
+  const seed = 181, N = 50000, M = 2 * N;
+  const rng = mulberry32(seed);
+  function srandn() { let u = 0, v = 0; while (u === 0) u = rng(); while (v === 0) v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  const H = new Float64Array(M), W = new Float64Array(M), S = new Uint8Array(M), A = new Uint8Array(M), V = new Uint16Array(M);
+  const rhoM = 43.3 / (7.1 * 11.1), rhoW = 26 / (7 * 9.3);
+  for (let i = 0; i < N; i++) { const z1 = srandn(), z2 = srandn(); H[i] = Math.round((168 + 7.1 * z1) * 10) / 10; W[i] = Math.round((67.3 + 11.1 * (rhoM * z1 + Math.sqrt(1 - rhoM * rhoM) * z2)) * 10) / 10; S[i] = 1; }
+  for (let i = N; i < M; i++) { const z1 = srandn(), z2 = srandn(); H[i] = Math.round((154.5 + 7 * z1) * 10) / 10; W[i] = Math.round((53.5 + 9.3 * (rhoW * z1 + Math.sqrt(1 - rhoW * rhoW) * z2)) * 10) / 10; S[i] = 2; }
+  for (let i = 0; i < M; i++) { A[i] = rng() < 0.5 ? 1 : 2; V[i] = Math.round(-4.5 * Math.log(1 - rng())); }
+  /* 名簿の並びをシャッフル（男女が混ざったページになるように; これも固定シードで毎回同じ） */
+  const perm = new Uint32Array(M);
+  for (let i = 0; i < M; i++) perm[i] = i;
+  for (let i = M - 1; i > 0; i--) { const j = (rng() * (i + 1)) | 0; const t = perm[i]; perm[i] = perm[j]; perm[j] = t; }
+  const h = new Float64Array(M), w = new Float64Array(M), s = new Uint8Array(M), a = new Uint8Array(M), v = new Uint16Array(M);
+  for (let i = 0; i < M; i++) { const k = perm[i]; h[i] = H[k]; w[i] = W[k]; s[i] = S[k]; a[i] = A[k]; v[i] = V[k]; }
+  /* インデックス（行番号=ID-1）一覧 */
+  const menIdx = [], womenIdx = [], allIdx = new Array(M);
+  for (let i = 0; i < M; i++) { allIdx[i] = i; if (s[i] === 1) menIdx.push(i); else womenIdx.push(i); }
+
+  /* 市町村（1000市町村 × 100人）: 受診回数の順位に雑音を加えた値で並べて100人ずつ区切る。
+     同じ市町村の住民は受診回数が似る（集落抽出のばらつきが単純無作為抽出の約2.6倍）。別の固定シードを使い，上の名簿の値は変えない */
+  const rng2 = mulberry32(2025);
+  function srandn2() { let u = 0, vv = 0; while (u === 0) u = rng2(); while (vv === 0) vv = rng2(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * vv); }
+  const ord = allIdx.slice().sort(function (x, y) { return v[x] - v[y] || x - y; });
+  const score = new Float64Array(M);
+  for (let r = 0; r < M; r++) score[ord[r]] = (r + 0.5) / M;
+  const keys = new Array(M);
+  for (let i = 0; i < M; i++) keys[i] = { i: i, k: score[i] + srandn2() };
+  keys.sort(function (x, y) { return x.k - y.k; });
+  const town = new Uint16Array(M), townMembers = [];
+  for (let t = 0; t < 1000; t++) townMembers.push([]);
+  for (let r = 0; r < M; r++) { const t = Math.floor(r / 100); town[keys[r].i] = t; townMembers[t].push(keys[r].i); }
+  return { M: M, height: h, weight: w, sex: s, area: a, visits: v, town: town, townMembers: townMembers, menIdx: menIdx, womenIdx: womenIdx, allIdx: allIdx };
+})();
+
+/* 母集団の集計値 */
+function idxMean(arr, idx) { let s = 0; for (let i = 0; i < idx.length; i++) s += arr[idx[i]]; return s / idx.length; }
+function idxSd(arr, idx) { const m = idxMean(arr, idx); let s = 0; for (let i = 0; i < idx.length; i++) { const d = arr[idx[i]] - m; s += d * d; } return Math.sqrt(s / (idx.length - 1)); }
+const POPSTAT = {
+  mh: idxMean(POP.height, POP.menIdx), mhSd: idxSd(POP.height, POP.menIdx),
+  mw: idxMean(POP.weight, POP.menIdx), mwSd: idxSd(POP.weight, POP.menIdx),
+  fh: idxMean(POP.height, POP.womenIdx), fhSd: idxSd(POP.height, POP.womenIdx),
+  fw: idxMean(POP.weight, POP.womenIdx), fwSd: idxSd(POP.weight, POP.womenIdx),
+  vis: idxMean(POP.visits, POP.allIdx), visSd: idxSd(POP.visits, POP.allIdx),
+  ah: idxMean(POP.height, POP.allIdx), ahSd: idxSd(POP.height, POP.allIdx)
+};
+
+/* 名簿からの無作為抽出（非復元, 毎回異なる） */
+function sampleFrom(pool, n) {
+  const seen = new Set(), out = [];
+  while (out.length < n) { const j = pool[(Math.random() * pool.length) | 0]; if (!seen.has(j)) { seen.add(j); out.push(j); } }
+  return out;
+}
+
+/* ============ 作図の共通部品 ============ */
+function setupCanvas(cv) {
+  /* 論理サイズは初回のwidth/height属性を保持して使う（再描画のたびにdpr倍されて拡大し続けるのを防ぐ） */
+  if (!cv.dataset.w) { cv.dataset.w = cv.width; cv.dataset.h = cv.height; }
+  const dpr = window.devicePixelRatio || 1, w = +cv.dataset.w, h = +cv.dataset.h;
+  cv.width = w * dpr; cv.height = h * dpr; cv.style.width = w + "px"; cv.style.height = "auto"; /* 狭い画面では max-width:100% で縮み，縦横比を保つ */
+  const ctx = cv.getContext("2d"); ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h);
+  return { ctx: ctx, w: w, h: h };
+}
+function niceTicks(lo, hi, n) {
+  const span = hi - lo; if (span <= 0) return [lo];
+  const raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw))), norm = raw / mag;
+  let step; if (norm < 1.5) step = 1; else if (norm < 3) step = 2; else if (norm < 7) step = 5; else step = 10;
+  step *= mag;
+  const start = Math.ceil(lo / step) * step, out = [];
+  for (let v = start; v <= hi + step * 1e-9; v += step) out.push(Math.round(v / step) * step);
+  return out;
+}
+function frame(ctx, W, H, dom, opts) {
+  const mL = 56, mR = 16, mT = 14, mB = 38;
+  const x0 = mL, x1 = W - mR, y0 = H - mB, y1 = mT;
+  const xmin = dom[0], xmax = dom[1], ymin = dom[2], ymax = dom[3];
+  const xlog = opts && opts.xlog;
+  const sx = xlog
+    ? function (v) { return x0 + (Math.log10(v) - Math.log10(xmin)) / (Math.log10(xmax) - Math.log10(xmin)) * (x1 - x0); }
+    : function (v) { return x0 + (v - xmin) / (xmax - xmin) * (x1 - x0); };
+  const sy = function (v) { return y0 + (v - ymin) / (ymax - ymin) * (y1 - y0); };
+  ctx.lineWidth = 1; ctx.font = "12px 'Segoe UI', sans-serif";
+  const yt = niceTicks(ymin, ymax, 5);
+  ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillStyle = "#666";
+  for (const t of yt) { const y = sy(t); ctx.strokeStyle = "#eee"; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke(); ctx.fillText(opts && opts.yfmt ? opts.yfmt(t) : String(t), x0 - 8, y); }
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  let xt;
+  if (opts && opts.xticks) xt = opts.xticks;
+  else if (xlog) { xt = []; for (let p = Math.ceil(Math.log10(xmin)); p <= Math.floor(Math.log10(xmax)); p++) xt.push(Math.pow(10, p)); }
+  else xt = niceTicks(xmin, xmax, 6);
+  for (const t of xt) { ctx.fillText(opts && opts.xfmt ? opts.xfmt(t) : String(t), sx(t), y0 + 6); }
+  ctx.strokeStyle = "#999"; ctx.beginPath(); ctx.moveTo(x0, y1); ctx.lineTo(x0, y0); ctx.lineTo(x1, y0); ctx.stroke();
+  return { sx: sx, sy: sy, x0: x0, x1: x1, y0: y0, y1: y1 };
+}
+function bins(data, nbins, lo, hi) {
+  const w = (hi - lo) / nbins, c = new Array(nbins).fill(0);
+  for (let i = 0; i < data.length; i++) { let k = Math.floor((data[i] - lo) / w); if (k < 0) k = 0; if (k >= nbins) k = nbins - 1; c[k]++; }
+  return { counts: c, w: w, lo: lo };
+}
+function drawBars(ctx, sc, b, heights, color) {
+  ctx.fillStyle = color;
+  for (let k = 0; k < heights.length; k++) { const x = sc.sx(b.lo + k * b.w), xr = sc.sx(b.lo + (k + 1) * b.w), y = sc.sy(heights[k]); ctx.fillRect(x, y, Math.max(1, xr - x - 1), sc.y0 - y); }
+}
+
+/* 数値コントロール（スライダー＋数値入力＋[−][＋]）を1つに束ねる */
+function linkNumeric(base, onChange) {
+  const range = document.getElementById(base + "Range");
+  const num = document.getElementById(base + "Num");
+  const minus = document.getElementById(base + "Minus");
+  const plus = document.getElementById(base + "Plus");
+  const min = +range.min, max = +range.max, step = +range.step || 1;
+  const dec = (String(step).split(".")[1] || "").length;
+  function round(v) { const r = Math.round(v / step) * step; return +r.toFixed(dec); }
+  function get() { return +range.value; }
+  function set(v) { if (isNaN(v)) v = min; v = round(v); if (v < min) v = min; if (v > max) v = max; range.value = v; num.value = v; }
+  range.addEventListener("input", function () { num.value = range.value; onChange(); });
+  num.addEventListener("change", function () { set(+num.value); onChange(); });
+  minus.addEventListener("click", function () { set(get() - step); onChange(); });
+  plus.addEventListener("click", function () { set(get() + step); onChange(); });
+  return { get: get, set: set };
+}
+
+/* ============ 0. 名簿の閲覧 ============ */
+const ROWS = 10;
+let page = 0;
+const maxPage = Math.ceil(POP.M / ROWS) - 1;
+function rosterRow(i) {
+  return "<tr><td>" + (i + 1) + "</td><td class='c'>" + (POP.sex[i] === 1 ? "男" : "女") + "</td><td>" + POP.height[i].toFixed(1) + "</td><td>" + POP.weight[i].toFixed(1) + "</td><td class='c'>" + (POP.area[i] === 1 ? "東地域" : "西地域") + "</td><td class='c'>" + String(POP.town[i] + 1).padStart(4, "0") + "</td><td>" + POP.visits[i] + "</td></tr>";
+}
+function rosterHeader() {
+  return "<tr><th>ID</th><th>性別</th><th>身長 (cm)</th><th>体重 (kg)</th><th>地域</th><th>市町村</th><th>受診回数 (回/年)</th></tr>";
+}
+function drawRoster() {
+  const start = page * ROWS;
+  let html = "<table class='roster'>" + rosterHeader();
+  for (let i = start; i < Math.min(start + ROWS, POP.M); i++) html += rosterRow(i);
+  html += "</table>";
+  document.getElementById("rosterTable").innerHTML = html;
+  document.getElementById("pageInfo").textContent = "ID " + (start + 1) + " 〜 " + Math.min(start + ROWS, POP.M) + " ／ 全 " + POP.M.toLocaleString() + " 人";
+}
+document.getElementById("pgFirst").addEventListener("click", function () { page = 0; drawRoster(); });
+document.getElementById("pgPrev").addEventListener("click", function () { if (page > 0) page--; drawRoster(); });
+document.getElementById("pgNext").addEventListener("click", function () { if (page < maxPage) page++; drawRoster(); });
+document.getElementById("jumpBtn").addEventListener("click", function () {
+  let id = Math.round(+document.getElementById("jumpId").value);
+  if (isNaN(id) || id < 1) id = 1; if (id > POP.M) id = POP.M;
+  document.getElementById("jumpId").value = id;
+  page = Math.floor((id - 1) / ROWS); drawRoster();
+});
+
+/* 母集団の要約統計量表 */
+function drawPopSummary() {
+  const s = POPSTAT;
+  document.getElementById("popSummary").innerHTML =
+    "<table class='roster'><tr><th>性別</th><th>人数</th><th>平均身長 (cm)</th><th>身長の標準偏差</th><th>平均体重 (kg)</th><th>体重の標準偏差</th></tr>" +
+    "<tr><td class='c'>男性</td><td>" + POP.menIdx.length.toLocaleString() + "</td><td>" + s.mh.toFixed(1) + "</td><td>" + s.mhSd.toFixed(1) + "</td><td>" + s.mw.toFixed(1) + "</td><td>" + s.mwSd.toFixed(1) + "</td></tr>" +
+    "<tr><td class='c'>女性</td><td>" + POP.womenIdx.length.toLocaleString() + "</td><td>" + s.fh.toFixed(1) + "</td><td>" + s.fhSd.toFixed(1) + "</td><td>" + s.fw.toFixed(1) + "</td><td>" + s.fwSd.toFixed(1) + "</td></tr>" +
+    "</table>" +
+    "<p class='caption'>身長（全員）: 平均 " + s.ah.toFixed(1) + " cm，標準偏差 " + s.ahSd.toFixed(1) + "　外来受診回数（全員）: 平均 " + s.vis.toFixed(1) + " 回/年，標準偏差 " + s.visSd.toFixed(1) + "</p>";
+}
+
+/* 母集団ヒストグラム */
+function popValues(kind) {
+  if (kind === "mh") { const a = new Array(POP.menIdx.length); for (let i = 0; i < a.length; i++) a[i] = POP.height[POP.menIdx[i]]; return a; }
+  if (kind === "fh") { const a = new Array(POP.womenIdx.length); for (let i = 0; i < a.length; i++) a[i] = POP.height[POP.womenIdx[i]]; return a; }
+  const a = new Array(POP.M); for (let i = 0; i < POP.M; i++) a[i] = POP.visits[i]; return a;
+}
+function drawPopHist() {
+  const kind = document.querySelector('input[name=popvar]:checked').value;
+  const data = popValues(kind);
+  const cv = setupCanvas(document.getElementById("popCanvas")), ctx = cv.ctx;
+  let e = extent(data), lo = e[0], hi = e[1];
+  let nb = 50;
+  if (kind === "vis") { lo = -0.5; hi = e[1] + 0.5; nb = Math.min(60, e[1] + 1); }
+  else { const pad = (hi - lo) * 0.02; lo -= pad; hi += pad; }
+  const b = bins(data, nb, lo, hi);
+  const ymax = Math.max.apply(null, b.counts) * 1.1;
+  const sc = frame(ctx, cv.w, cv.h, [lo, hi, 0, ymax], { xfmt: function (t) { return fmt(t, 0); }, yfmt: function (t) { return fmt(t, 0); } });
+  drawBars(ctx, sc, b, b.counts, "rgba(138,138,138,0.65)");
+}
+Array.prototype.forEach.call(document.querySelectorAll('input[name=popvar]'), function (el) { el.addEventListener("change", drawPopHist); });
+
+/* ============ 1. 標本抽出法の比較 ============ */
+const A_METHODS = [
+  { key: "srs", label: "単純無作為" },
+  { key: "sys", label: "系統" },
+  { key: "clu", label: "集落" },
+  { key: "conv", label: "便宜的" }
+];
+/* 男女交互に並べ替えた名簿 */
+const ALT_ORDER = (function () { const o = []; for (let j = 0; j < POP.menIdx.length; j++) { o.push(POP.menIdx[j]); o.push(POP.womenIdx[j]); } return o; })();
+/* 便宜的抽出用: 受診回数の累積和（受診回数に比例した確率で選ぶ） */
+const VIS_CUM = (function () { const c = new Float64Array(POP.M); let s = 0; for (let i = 0; i < POP.M; i++) { s += POP.visits[i]; c[i] = s; } return c; })();
+function drawWeighted(n) {
+  const total = VIS_CUM[POP.M - 1], seen = new Set(), out = [];
+  while (out.length < n) {
+    const u = Math.random() * total; let lo = 0, hi = POP.M - 1;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (VIS_CUM[mid] > u) hi = mid; else lo = mid + 1; }
+    if (!seen.has(lo)) { seen.add(lo); out.push(lo); }
+  }
+  return out;
+}
+function drawSample(method, n) {
+  if (method === "srs") return sampleFrom(POP.allIdx, n);
+  if (method === "sys") {
+    const list = radioVal("aOrder") === "alt" ? ALT_ORDER : POP.allIdx;
+    const k = Math.floor(POP.M / n), start = randInt(k), out = [];
+    for (let j = 0; j < n; j++) out.push(list[start + j * k]);
+    return out;
+  }
+  if (method === "clu") {
+    const towns = sampleFrom(POP.townMembers.map(function (_, t) { return t; }), n / 100);
+    let out = []; towns.forEach(function (t) { out = out.concat(POP.townMembers[t]); });
+    return out;
+  }
+  return drawWeighted(n);
+}
+const aState = { items: { srs: [], sys: [], clu: [], conv: [] } };
+function aVarInfo() {
+  return radioVal("aVar") === "vis"
+    ? { arr: POP.visits, mu: POPSTAT.vis, unit: "回", label: "平均受診回数", dec: 2 }
+    : { arr: POP.height, mu: POPSTAT.ah, unit: "cm", label: "平均身長", dec: 1 };
+}
+function aRun(times) {
+  const n = +radioVal("aN"), v = aVarInfo();
+  for (let t = 0; t < times; t++) {
+    A_METHODS.forEach(function (m) {
+      const idx = drawSample(m.key, n);
+      let men = 0; for (let i = 0; i < idx.length; i++) if (POP.sex[idx[i]] === 1) men++;
+      aState.items[m.key].push({ m: idxMean(v.arr, idx), men: men / idx.length, j: Math.random() - 0.5 });
+    });
+  }
+  aDraw();
+}
+function aReset() { A_METHODS.forEach(function (m) { aState.items[m.key] = []; }); aDraw(); }
+function aDraw() {
+  const v = aVarInfo(), K = aState.items.srs.length;
+  let lo = v.mu, hi = v.mu;
+  A_METHODS.forEach(function (m) { aState.items[m.key].forEach(function (d) { if (d.m < lo) lo = d.m; if (d.m > hi) hi = d.m; }); });
+  const span = Math.max(hi - lo, v.unit === "回" ? 2 : 4), pad = span * 0.12;
+  const mid = (lo + hi) / 2; lo = Math.min(lo, mid - span / 2) - pad; hi = Math.max(hi, mid + span / 2) + pad;
+  const cv = setupCanvas(document.getElementById("aCanvas")), ctx = cv.ctx;
+  const sc = frame(ctx, cv.w, cv.h, [0, 4, lo, hi], {
+    xticks: [0.5, 1.5, 2.5, 3.5], xfmt: function (t) { return A_METHODS[Math.floor(t)].label; },
+    yfmt: function (t) { return trimNum(t); }
+  });
+  ctx.strokeStyle = "#d13438"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sc.x0, sc.sy(v.mu)); ctx.lineTo(sc.x1, sc.sy(v.mu)); ctx.stroke();
+  const r = K > 200 ? 2 : 3;
+  A_METHODS.forEach(function (m, c) {
+    const items = aState.items[m.key];
+    ctx.fillStyle = "rgba(43,108,176,0.45)";
+    items.forEach(function (d) { ctx.beginPath(); ctx.arc(sc.sx(c + 0.5 + d.j * 0.6), sc.sy(d.m), r, 0, 2 * Math.PI); ctx.fill(); });
+    if (items.length) { const d = items[items.length - 1]; ctx.fillStyle = "#2b6cb0"; ctx.strokeStyle = "#1a1a1a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(sc.sx(c + 0.5 + d.j * 0.6), sc.sy(d.m), 7, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); }
+  });
+  const ro = document.getElementById("aReadout");
+  if (K === 0) { ro.innerHTML = "まだ抽出していません。「4つの方法で1回ずつ抽出」を押してみましょう。母平均 = <b>" + fmt(v.mu, v.dec) + " " + v.unit + "</b>"; document.getElementById("aTable").innerHTML = ""; return; }
+  ro.innerHTML = "抽出回数: 各方法 <b>" + K + " 回</b>（n = " + radioVal("aN") + " 人）　母平均 = <b>" + fmt(v.mu, v.dec) + " " + v.unit + "</b>";
+  let html = "<table class='roster'><tr><th>方法</th><th>最新の標本の" + v.label + "</th><th>推定値の平均</th><th>母平均とのずれ（偏り）</th><th>推定値の標準偏差（ばらつき）</th><th>最新の標本の男性の割合</th></tr>";
+  A_METHODS.forEach(function (m) {
+    const items = aState.items[m.key], ms = items.map(function (d) { return d.m; }), avg = meanOf(ms);
+    const bias = avg - v.mu, sd = items.length > 1 ? sdOf(ms) : NaN;
+    html += "<tr><td class='c'>" + m.label + "</td><td>" + fmt(items[items.length - 1].m, v.dec) + "</td><td>" + fmt(avg, v.dec) + "</td><td>" + (bias >= 0 ? "+" : "") + fmt(bias, v.dec) + "</td><td>" + (isNaN(sd) ? "—" : fmt(sd, v.dec + 1)) + "</td><td>" + pct(items[items.length - 1].men, 0) + "</td></tr>";
+  });
+  html += "</table><p class='caption'>「推定値の平均」と「標準偏差」は，これまでの抽出すべての標本平均から計算しています（2回以上抽出すると表示）。</p>";
+  document.getElementById("aTable").innerHTML = html;
+}
+document.getElementById("aOnce").addEventListener("click", function () { aRun(1); });
+document.getElementById("a100").addEventListener("click", function () { aRun(100); });
+document.getElementById("aReset").addEventListener("click", aReset);
+["aVar", "aN", "aOrder"].forEach(function (nm) { onRadio(nm, aReset); });
+
+/* ============ 2. 大数の法則 ============ */
+const llnCanvas = document.getElementById("llnCanvas");
+const llnReadout = document.getElementById("llnReadout");
+function drawLLN() {
+  const n = llnN.get();
+  const idx = sampleFrom(POP.menIdx, n);
+  /* 抽出された人の表（先頭10人まで） */
+  let html = "<table class='roster'>" + rosterHeader();
+  for (let i = 0; i < Math.min(10, n); i++) html += rosterRow(idx[i]);
+  html += "</table>";
+  if (n > 10) html += "<p class='caption'>…ほか " + (n - 10) + " 人（表示は先頭10人のみ）</p>";
+  document.getElementById("llnSampleTable").innerHTML = html;
+  /* 逐次平均 */
+  let s = 0; const m = new Array(n);
+  for (let i = 0; i < n; i++) { s += POP.height[idx[i]]; m[i] = s / (i + 1); }
+  const cv = setupCanvas(llnCanvas), ctx = cv.ctx;
+  const sc = frame(ctx, cv.w, cv.h, [1, Math.max(n, 10), 162, 174], { xlog: true, xfmt: function (t) { return String(t); }, yfmt: function (t) { return String(t); } });
+  ctx.strokeStyle = "#d13438"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sc.x0, sc.sy(POPSTAT.mh)); ctx.lineTo(sc.x1, sc.sy(POPSTAT.mh)); ctx.stroke();
+  ctx.strokeStyle = "#2b6cb0"; ctx.lineWidth = 1.5; ctx.beginPath();
+  for (let i = 0; i < n; i++) { const x = sc.sx(i + 1), y = sc.sy(Math.max(162, Math.min(174, m[i]))); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+  ctx.stroke();
+  llnReadout.innerHTML = "選ばれた " + n + " 人の平均身長 = <b>" + fmt(m[n - 1]) + " cm</b>　（母平均 = " + POPSTAT.mh.toFixed(1) + " cm）";
+}
+
+/* ============ 2a. 10人 vs 1000人 の対決 ============ */
+const duelState = { items: [] };
+function duelRun(times) {
+  const mu = POPSTAT.mh;
+  for (let t = 0; t < times; t++) {
+    const m10 = idxMean(POP.height, sampleFrom(POP.menIdx, 10));
+    const m1000 = idxMean(POP.height, sampleFrom(POP.menIdx, 1000));
+    /* jitterは点の重なりを避けるための横方向のずらし（描画のたびに変わらないよう保存） */
+    duelState.items.push({ m10: m10, m1000: m1000, d10: Math.abs(m10 - mu), d1000: Math.abs(m1000 - mu), j10: Math.random() - 0.5, j1000: Math.random() - 0.5 });
+  }
+  duelDraw();
+}
+function duelDraw() {
+  const cv = setupCanvas(document.getElementById("duelCanvas")), ctx = cv.ctx;
+  const K = duelState.items.length, mu = POPSTAT.mh, ylo = 160, yhi = 176;
+  const sc = frame(ctx, cv.w, cv.h, [0, 2, ylo, yhi], {
+    xfmt: function (t) { return t === 0.5 ? "n = 10" : t === 1.5 ? "n = 1000" : ""; },
+    yfmt: function (t) { return fmt(t, 0); }
+  });
+  ctx.strokeStyle = "#d13438"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sc.x0, sc.sy(mu)); ctx.lineTo(sc.x1, sc.sy(mu)); ctx.stroke();
+  const clampY = function (v) { return sc.sy(Math.max(ylo, Math.min(yhi, v))); };
+  const r = K > 200 ? 2 : 3;
+  for (let k = 0; k < K; k++) {
+    const d = duelState.items[k];
+    ctx.fillStyle = "rgba(138,138,138,0.55)"; ctx.beginPath(); ctx.arc(sc.sx(0.5 + d.j10 * 0.5), clampY(d.m10), r, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = "rgba(43,108,176,0.55)"; ctx.beginPath(); ctx.arc(sc.sx(1.5 + d.j1000 * 0.5), clampY(d.m1000), r, 0, 2 * Math.PI); ctx.fill();
+  }
+  let w10 = 0, w1000 = 0, s10 = 0, s1000 = 0;
+  for (let k = 0; k < K; k++) { const d = duelState.items[k]; if (d.d1000 < d.d10) w1000++; else if (d.d10 < d.d1000) w10++; s10 += d.d10; s1000 += d.d1000; }
+  const ro = document.getElementById("duelReadout");
+  if (K === 0) { ro.innerHTML = "まだ対決していません。「1回対決する」を押してみましょう。"; return; }
+  /* 最新の1回を強調 */
+  const last = duelState.items[K - 1];
+  const p10 = [sc.sx(0.5 + last.j10 * 0.5), clampY(last.m10)], p1000 = [sc.sx(1.5 + last.j1000 * 0.5), clampY(last.m1000)];
+  ctx.strokeStyle = "#1a1a1a"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p10[0], p10[1]); ctx.lineTo(p1000[0], p1000[1]); ctx.stroke();
+  ctx.lineWidth = 2;
+  ctx.fillStyle = "#8a8a8a"; ctx.beginPath(); ctx.arc(p10[0], p10[1], 7, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#2b6cb0"; ctx.beginPath(); ctx.arc(p1000[0], p1000[1], 7, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+  const winner = last.d1000 < last.d10 ? "1000人の勝ち" : last.d10 < last.d1000 ? "10人の勝ち" : "引き分け";
+  const pct = function (w) { return fmt(100 * w / K, 1); };
+  ro.innerHTML = "最新の対決: 10人の平均 = " + fmt(last.m10) + " cm（ずれ " + fmt(last.d10) + "）、1000人の平均 = " + fmt(last.m1000) + " cm（ずれ " + fmt(last.d1000) + "）→ <b>" + winner + "</b><br>" +
+    "通算 " + K + " 回: 1000人のほうが近かった <b>" + w1000 + " 回（" + pct(w1000) + "%）</b>、10人のほうが近かった <b>" + w10 + " 回（" + pct(w10) + "%）</b>" +
+    (K - w10 - w1000 > 0 ? "、引き分け " + (K - w10 - w1000) + " 回" : "") + "<br>" +
+    "母平均からのずれの平均: 10人 = <b>" + fmt(s10 / K) + " cm</b>、1000人 = <b>" + fmt(s1000 / K) + " cm</b>";
+}
+
+/* ============ 3. 中心極限定理 ============ */
+function cltConfig() {
+  const kind = document.querySelector('input[name=cltvar]:checked').value;
+  if (kind === "mh") return { pool: POP.menIdx, arr: POP.height, mu: POPSTAT.mh, sd: POPSTAT.mhSd, isInt: false, label: "身長（男性）" };
+  return { pool: POP.allIdx, arr: POP.visits, mu: POPSTAT.vis, sd: POPSTAT.visSd, isInt: true, label: "外来受診回数（全員）" };
+}
+function drawCLT() {
+  const n = cltN.get(), reps = cltReps.get(), cfg = cltConfig();
+  /* 母集団の分布 */
+  {
+    const cv = setupCanvas(document.getElementById("cltPopCanvas")), ctx = cv.ctx;
+    const data = new Array(cfg.pool.length);
+    for (let i = 0; i < data.length; i++) data[i] = cfg.arr[cfg.pool[i]];
+    let e = extent(data), lo = e[0], hi = e[1], nb = 50;
+    if (cfg.isInt) { lo = -0.5; hi = e[1] + 0.5; nb = Math.min(60, e[1] + 1); }
+    else { const pad = (hi - lo) * 0.02; lo -= pad; hi += pad; }
+    const b = bins(data, nb, lo, hi);
+    const ymax = Math.max.apply(null, b.counts) * 1.1;
+    const sc = frame(ctx, cv.w, cv.h, [lo, hi, 0, ymax], { xfmt: function (t) { return fmt(t, 0); }, yfmt: function (t) { return fmt(t, 0); } });
+    drawBars(ctx, sc, b, b.counts, "rgba(138,138,138,0.65)");
+  }
+  /* 標本平均の分布 */
+  const ms = new Array(reps);
+  const pool = cfg.pool, arr = cfg.arr, L = pool.length;
+  for (let r = 0; r < reps; r++) {
+    let s = 0;
+    if (n * 20 < L) { /* nが小さい: 単純ランダム（重複は実質無視できる） */
+      for (let j = 0; j < n; j++) s += arr[pool[(Math.random() * L) | 0]];
+    } else {
+      const idx = sampleFrom(pool, n);
+      for (let j = 0; j < n; j++) s += arr[idx[j]];
+    }
+    ms[r] = s / n;
+  }
+  const se = cfg.sd / Math.sqrt(n);
+  {
+    const cv = setupCanvas(document.getElementById("cltMeansCanvas")), ctx = cv.ctx;
+    let e = extent(ms), lo = e[0], hi = e[1]; const pad = (hi - lo) * 0.03 || 0.5; lo -= pad; hi += pad;
+    const nb = 40, b = bins(ms, nb, lo, hi);
+    const dens = b.counts.map(function (c) { return c / (reps * b.w); });
+    const peak = 1 / (se * Math.sqrt(2 * Math.PI));
+    const ymax = Math.max(Math.max.apply(null, dens), peak) * 1.12;
+    const sc = frame(ctx, cv.w, cv.h, [lo, hi, 0, ymax], { xfmt: function (t) { return fmt(t, 1); }, yfmt: function (t) { return fmt(t, 3); } });
+    drawBars(ctx, sc, b, dens, "rgba(43,108,176,0.5)");
+    ctx.strokeStyle = "#d13438"; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(sc.sx(cfg.mu), sc.y1); ctx.lineTo(sc.sx(cfg.mu), sc.y0); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = "#d13438"; ctx.lineWidth = 2; ctx.beginPath();
+    const steps = 240;
+    for (let i = 0; i <= steps; i++) { const xv = lo + (hi - lo) * i / steps; const yv = Math.exp(-0.5 * Math.pow((xv - cfg.mu) / se, 2)) / (se * Math.sqrt(2 * Math.PI)); const px = sc.sx(xv), py = sc.sy(yv); if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+    ctx.stroke();
+  }
+  document.getElementById("cltReadout").innerHTML = cfg.label + "，n = " + n + "：観測された標本平均の標準偏差 = <b>" + fmt(sdOf(ms), 3) + "</b>　／　理論値 σ/√n = <b>" + fmt(se, 3) + "</b>";
+}
+Array.prototype.forEach.call(document.querySelectorAll('input[name=cltvar]'), function (el) { el.addEventListener("change", drawCLT); });
+
+/* ============ 4. 信頼区間 ============ */
+function drawCI() {
+  const n = ciN.get(), K = ciK.get(), mu = POPSTAT.mh;
+  const tcrit = qt(0.975, n - 1);
+  const items = new Array(K); let lomin = Infinity, himax = -Infinity, cover = 0;
+  for (let k = 0; k < K; k++) {
+    const idx = sampleFrom(POP.menIdx, n);
+    const x = new Array(n); for (let i = 0; i < n; i++) x[i] = POP.height[idx[i]];
+    const m = meanOf(x), half = tcrit * sdOf(x) / Math.sqrt(n), lo = m - half, hi = m + half;
+    const inside = (lo <= mu && hi >= mu); if (inside) cover++;
+    if (lo < lomin) lomin = lo; if (hi > himax) himax = hi;
+    items[k] = { lo: lo, hi: hi, in: inside };
+  }
+  const pad = (himax - lomin) * 0.05;
+  const cv = setupCanvas(document.getElementById("ciCanvas")), ctx = cv.ctx;
+  const sc = frame(ctx, cv.w, cv.h, [0.5, K + 0.5, lomin - pad, himax + pad], { xfmt: function (t) { return fmt(t, 0); }, yfmt: function (t) { return fmt(t, 0); } });
+  ctx.strokeStyle = "#d13438"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(sc.x0, sc.sy(mu)); ctx.lineTo(sc.x1, sc.sy(mu)); ctx.stroke();
+  ctx.lineWidth = K > 120 ? 1 : 1.6;
+  for (let k = 0; k < K; k++) { const d = items[k], x = sc.sx(k + 1); ctx.strokeStyle = d.in ? "#2b6cb0" : "#d13438"; ctx.beginPath(); ctx.moveTo(x, sc.sy(d.lo)); ctx.lineTo(x, sc.sy(d.hi)); ctx.stroke(); }
+  document.getElementById("ciReadout").innerHTML = "母平均(" + mu.toFixed(1) + "cm)を含む区間 = <b>" + cover + " / " + K + "</b>　（95%区間なので理論上は約 " + Math.round(K * 0.95) + " 本）";
+}
+
+/* ============ 4b. 研究者の視点 ============ */
+const rmState = { items: [], revealed: false };
+function rmDraw() {
+  const cv = setupCanvas(document.getElementById("rmCanvas")), ctx = cv.ctx;
+  const K = rmState.items.length, mu = POPSTAT.mh;
+  let lomin = Infinity, himax = -Infinity;
+  for (let i = 0; i < K; i++) { const d = rmState.items[i]; if (d.lo < lomin) lomin = d.lo; if (d.hi > himax) himax = d.hi; }
+  if (K === 0) { lomin = 162; himax = 174; }
+  if (rmState.revealed) { lomin = Math.min(lomin, mu - 1); himax = Math.max(himax, mu + 1); }
+  const pad = (himax - lomin) * 0.08 || 1;
+  const xmax = Math.max(10, K);
+  const sc = frame(ctx, cv.w, cv.h, [0.5, xmax + 0.5, lomin - pad, himax + pad], { xfmt: function (t) { return fmt(t, 0); }, yfmt: function (t) { return fmt(t, 0); } });
+  if (rmState.revealed) { ctx.strokeStyle = "#d13438"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(sc.x0, sc.sy(mu)); ctx.lineTo(sc.x1, sc.sy(mu)); ctx.stroke(); }
+  ctx.lineWidth = K > 60 ? 1.2 : 2;
+  let cover = 0;
+  for (let k = 0; k < K; k++) {
+    const d = rmState.items[k]; if (d.in) cover++;
+    const x = sc.sx(k + 1);
+    ctx.strokeStyle = rmState.revealed ? (d.in ? "#2b6cb0" : "#d13438") : "#555";
+    ctx.beginPath(); ctx.moveTo(x, sc.sy(d.lo)); ctx.lineTo(x, sc.sy(d.hi)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 4, sc.sy(d.m)); ctx.lineTo(x + 4, sc.sy(d.m)); ctx.stroke();
+  }
+  const ro = document.getElementById("rmReadout");
+  if (K === 0) ro.innerHTML = "まだ調査をしていません。「調査を1回行う」を押してみましょう。";
+  else if (!rmState.revealed) ro.innerHTML = "これまでの調査: <b>" + K + " 回</b>。最新の95%信頼区間 = <b>" + fmt(rmState.items[K - 1].lo, 1) + " 〜 " + fmt(rmState.items[K - 1].hi, 1) + " cm</b>。この区間が母平均を含むかどうか，この画面からは確かめられません。";
+  else ro.innerHTML = "答え合わせ: <b>" + K + " 本中 " + cover + " 本</b>が母平均（" + mu.toFixed(1) + " cm）を含んでいました。現実の研究では，この答え合わせは決してできません。";
+}
+function rmOnce() {
+  const n = ciN.get(), tcrit = qt(0.975, n - 1);
+  const idx = sampleFrom(POP.menIdx, n);
+  const x = new Array(n); for (let i = 0; i < n; i++) x[i] = POP.height[idx[i]];
+  const m = meanOf(x), half = tcrit * sdOf(x) / Math.sqrt(n);
+  rmState.items.push({ m: m, lo: m - half, hi: m + half, in: (m - half <= POPSTAT.mh && m + half >= POPSTAT.mh) });
+  rmDraw();
+}
+
+/* ============ 予想ボックス（クリッカー連携） ============ */
+function wirePredicts() {
+  Object.keys(CLICKER).forEach(function (q) {
+    const radios = document.querySelectorAll('input[name="' + q + '"]');
+    const pick = document.getElementById(q + "pick");
+    /* 予想を選ぶまで解説を開けないようにする */
+    const det = pick.closest(".predict").querySelector("details"), sum = det ? det.querySelector("summary") : null;
+    const orig = sum ? sum.textContent : "";
+    function unlock() { if (det && det.classList.contains("locked")) { det.classList.remove("locked"); sum.textContent = orig; } }
+    if (sum) {
+      det.classList.add("locked"); sum.textContent = "解説（予想を選ぶと開けます）";
+      sum.addEventListener("click", function (e) { if (det.classList.contains("locked")) { e.preventDefault(); pick.textContent = "先に予想を選びましょう"; } });
+    }
+    Array.prototype.forEach.call(radios, function (el) {
+      if (el.checked) unlock();
+      el.addEventListener("change", function () {
+        const label = el.parentNode.textContent.trim();
+        pick.textContent = "あなたの予想: 「" + label + "」— 動かして確かめよう";
+        unlock();
+      });
+    });
+    const holder = document.getElementById(q + "clicker");
+    if (holder && CLICKER[q]) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "clicker"; b.textContent = "クリッカーで回答する";
+      b.addEventListener("click", function () { window.open(CLICKER[q], "_blank"); });
+      holder.appendChild(b);
+    }
+  });
+}
+
+/* ============ コントロール結線・初期描画 ============ */
+const llnN = linkNumeric("llnN", drawLLN);
+const cltN = linkNumeric("cltN", drawCLT);
+const cltReps = linkNumeric("cltReps", drawCLT);
+const ciN = linkNumeric("ciN", drawCI);
+const ciK = linkNumeric("ciK", drawCI);
+
+document.getElementById("llnRoll").addEventListener("click", drawLLN);
+document.getElementById("cltRoll").addEventListener("click", drawCLT);
+document.getElementById("ciRoll").addEventListener("click", drawCI);
+document.getElementById("duelOnce").addEventListener("click", function () { duelRun(1); });
+document.getElementById("duel10").addEventListener("click", function () { duelRun(10); });
+document.getElementById("duel100").addEventListener("click", function () { duelRun(100); });
+document.getElementById("duelReset").addEventListener("click", function () { duelState.items = []; duelDraw(); });
+document.getElementById("rmOnce").addEventListener("click", rmOnce);
+document.getElementById("rmReveal").addEventListener("click", function () { rmState.revealed = true; rmDraw(); });
+document.getElementById("rmReset").addEventListener("click", function () { rmState.items = []; rmState.revealed = false; rmDraw(); });
+
+document.getElementById("llnMuLabel").textContent = POPSTAT.mh.toFixed(1) + " cm";
+
+wirePredicts();
+drawRoster(); drawPopSummary(); drawPopHist();
+aDraw(); drawLLN(); duelDraw(); drawCLT(); drawCI(); rmDraw();
+</script>
+</body>
+</html>
