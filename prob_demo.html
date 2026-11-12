@@ -73,6 +73,7 @@
   table.dist td.hl-cell { background:var(--blue) !important; color:#fff; font-weight:700; }
   .practice { border:1px solid var(--line); border-radius:8px; padding:4px 16px 10px; margin:14px 0; }
   .practice .pq { margin:12px 0 4px; }
+  .practice .ptopic { margin:18px 0 0; font-size:1rem; color:var(--blue); border-bottom:1px dashed var(--line); }
   .practice .fb { font-size:.92rem; min-height:1.2em; }
   .practice .ok { color:#1e7b34; font-weight:600; }
   .practice .ng { color:var(--red); font-weight:600; }
@@ -284,10 +285,6 @@
   <div class="caption">累積分布関数（曲線の高さ = 下側確率）</div>
   <canvas id="dCdf" width="780" height="220"></canvas>
 
-  <h3>練習問題</h3>
-  <p>上の計算機を使って（または Excel や R で）答えを求め，入力して「判定」を押しましょう。</p>
-  <div class="practice" id="practice"></div>
-
   <!-- ============ 4. 分布表とt分布 ============ -->
   <h2>4. 分布表の読み方と t 分布</h2>
   <h3>4a. 標準正規分布表（上側確率）</h3>
@@ -353,6 +350,11 @@
   </ul>
   <p>次の「<a href="si_demo.html">推測統計の直感的理解</a>」では，架空の国の名簿から実際に標本を抽出して，抽出方法による違い，標本平均が従う確率分布（中心極限定理），
   それを使った信頼区間の考え方を体験します。</p>
+
+  <!-- ============ 6. 練習問題（自習用．授業用のURLでは表示しない） ============ -->
+  <h2>6. 練習問題（自習用）</h2>
+  <p>3節の計算機を使って（または Excel や R で）答えを求め，入力して「判定」を押しましょう。</p>
+  <div class="practice" id="practice"></div>
 </div>
 
 <script>
@@ -779,20 +781,39 @@ Array.prototype.forEach.call(document.querySelectorAll("button.preset[data-k]"),
 
 /* 練習問題 */
 const PRACTICE = [
-  { q: "平均 172 cm，標準偏差 5 cm の正規分布に従う集団で，身長 167 cm 以下の人の割合は何%？", unit: "%", ans: 100 * pnorm(167, 172, 5), tol: 0.1, dec: 2,
+  { topic: "二項分布（1節）", q: "成功率 0.8 の処置を10人に行うとき，ちょうど8人が成功する確率は何%？", unit: "%", ans: 100 * dbinom(8, 10, 0.8), tol: 0.1, dec: 2,
+    hint: "「ちょうど k 回」の確率です。1節の計算機で n，p，k を設定してみましょう",
+    how: "=BINOM.DIST(8,10,0.8,FALSE) ／ dbinom(8, size = 10, prob = 0.8)" },
+  { topic: "二項分布（1節）", q: "転倒の発生率が1%の病棟で，入院患者100人のうち転倒が1人以下である確率は何%？", unit: "%", ans: 100 * pbinom(1, 100, 0.01), tol: 0.1, dec: 2,
+    hint: "「k 回以下」の確率（0人と1人の確率の合計）です",
+    how: "=BINOM.DIST(1,100,0.01,TRUE) ／ pbinom(1, size = 100, prob = 0.01)" },
+  { topic: "二項分布（1節）", q: "n = 50，p = 0.2 の二項分布の分散は？", unit: "", ans: 50 * 0.2 * 0.8, tol: 0.01, dec: 0,
+    hint: "二項分布の分散は np(1−p) です",
+    how: "np(1−p) = 50 × 0.2 × 0.8" },
+  { topic: "確率密度（2節）", q: "縦軸が「密度」のヒストグラムで，階級幅 2 cm の棒の高さが 0.05 だった。その階級に入る人の割合は何%？", unit: "%", ans: 10, tol: 0.01, dec: 0,
+    hint: "密度のヒストグラムでは，棒の面積（高さ × 階級幅）がその階級に入る割合です",
+    how: "棒の面積 = 0.05 × 2 = 0.10，つまり 10%" },
+  { topic: "正規分布（3節）", hint: "下側確率・上側確率・パーセント点のどれを求める問題か確認しましょう", q: "平均 172 cm，標準偏差 5 cm の正規分布に従う集団で，身長 167 cm 以下の人の割合は何%？", unit: "%", ans: 100 * pnorm(167, 172, 5), tol: 0.1, dec: 2,
     how: "下側確率。=NORM.DIST(167,172,5,TRUE) ／ pnorm(167, mean = 172, sd = 5)" },
-  { q: "同じ集団で，下側10%点（10パーセンタイル）の身長は何 cm？", unit: "cm", ans: qnorm(0.1, 172, 5), tol: 0.05, dec: 2,
+  { topic: "正規分布（3節）", hint: "下側確率・上側確率・パーセント点のどれを求める問題か確認しましょう", q: "同じ集団で，下側10%点（10パーセンタイル）の身長は何 cm？", unit: "cm", ans: qnorm(0.1, 172, 5), tol: 0.05, dec: 2,
     how: "下側パーセント点。=NORM.INV(0.1,172,5) ／ qnorm(0.1, mean = 172, sd = 5)" },
-  { q: "同じ集団で，上位1%（99パーセンタイル）の身長は何 cm？", unit: "cm", ans: qnorm(0.99, 172, 5), tol: 0.05, dec: 2,
+  { topic: "正規分布（3節）", hint: "下側確率・上側確率・パーセント点のどれを求める問題か確認しましょう", q: "同じ集団で，上位1%（99パーセンタイル）の身長は何 cm？", unit: "cm", ans: qnorm(0.99, 172, 5), tol: 0.05, dec: 2,
     how: "上側1%点 = 下側99%点。=NORM.INV(0.99,172,5) ／ qnorm(0.01, 172, 5, lower.tail = FALSE)" },
-  { q: "偏差値（平均50，標準偏差10の正規分布）が70以上の人の割合は何%？", unit: "%", ans: 100 * (1 - pnorm(70, 50, 10)), tol: 0.05, dec: 2,
+  { topic: "正規分布（3節）", hint: "下側確率・上側確率・パーセント点のどれを求める問題か確認しましょう", q: "偏差値（平均50，標準偏差10の正規分布）が70以上の人の割合は何%？", unit: "%", ans: 100 * (1 - pnorm(70, 50, 10)), tol: 0.05, dec: 2,
     how: "上側確率。=1-NORM.DIST(70,50,10,TRUE) ／ pnorm(70, 50, 10, lower.tail = FALSE)" },
-  { q: "出生体重が平均 3000 g，標準偏差 400 g の正規分布に従うと仮定したとき，2500 g 未満（低出生体重）の割合は何%？", unit: "%", ans: 100 * pnorm(2500, 3000, 400), tol: 0.1, dec: 2,
-    how: "下側確率（連続分布なので「未満」も「以下」も同じ）。=NORM.DIST(2500,3000,400,TRUE) ／ pnorm(2500, 3000, 400)。実際の出生体重の分布は正規分布から少しずれるため，実際の割合とは一致しません" }
+  { topic: "正規分布（3節）", hint: "下側確率・上側確率・パーセント点のどれを求める問題か確認しましょう", q: "出生体重が平均 3000 g，標準偏差 400 g の正規分布に従うと仮定したとき，2500 g 未満（低出生体重）の割合は何%？", unit: "%", ans: 100 * pnorm(2500, 3000, 400), tol: 0.1, dec: 2,
+    how: "下側確率（連続分布なので「未満」も「以下」も同じ）。=NORM.DIST(2500,3000,400,TRUE) ／ pnorm(2500, 3000, 400)。実際の出生体重の分布は正規分布から少しずれるため，実際の割合とは一致しません" },
+  { topic: "分布表と t 分布（4節）", q: "標準正規分布で z ≥ 1.50 となる確率は？（4a の分布表で読み取り，小数で答える）", unit: "", ans: 1 - pnorm(1.5, 0, 1), tol: 0.0005, dec: 4,
+    hint: "4a の表で，行「1.5」と列「0.00」が交わるところを読みましょう（% ではなく小数で入力します）",
+    how: "分布表の z = 1.50 の値。=1-NORM.S.DIST(1.5,TRUE) ／ pnorm(1.5, lower.tail = FALSE)" },
+  { topic: "分布表と t 分布（4節）", q: "自由度 9 の t 分布の上側2.5%点は？（10人のデータで平均の95%信頼区間を作るときに使う値）", unit: "", ans: qt(0.975, 9), tol: 0.005, dec: 3,
+    hint: "4b で自由度を 9，上側確率を 0.025 にして読みましょう",
+    how: "=T.INV(0.975,9) ／ qt(0.975, df = 9)。正規分布の 1.96 より大きくなります" }
 ];
 (function () {
   let html = "";
   PRACTICE.forEach(function (p, i) {
+    if (i === 0 || p.topic !== PRACTICE[i - 1].topic) html += "<h4 class='ptopic'>" + p.topic + "</h4>";
     html += "<div class='pq'><b>問" + (i + 1) + "</b> " + p.q + "</div>" +
       "<div class='row' style='margin:4px 0'><input type='number' class='numin' step='any' id='pr" + i + "' style='width:110px'> " + p.unit +
       " <button class='nav' id='prb" + i + "'>判定</button> <span class='fb' id='prf" + i + "'></span></div>" +
@@ -804,7 +825,7 @@ const PRACTICE = [
       const v = parseFloat(dEl("pr" + i).value), fb = dEl("prf" + i);
       if (isNaN(v)) { fb.className = "fb ng"; fb.textContent = "数値を入力してください"; return; }
       if (Math.abs(v - p.ans) <= p.tol) { fb.className = "fb ok"; fb.textContent = "正解！（" + fmt(p.ans, p.dec) + " " + p.unit + "）"; }
-      else { fb.className = "fb ng"; fb.textContent = "ちがいます。下側確率・上側確率・パーセント点のどれを求める問題か確認しましょう" + (p.unit === "%" ? "（% で入力します）" : ""); }
+      else { fb.className = "fb ng"; fb.textContent = "ちがいます。" + p.hint + (p.unit === "%" ? "（% で入力します）" : ""); }
     });
   });
 })();
