@@ -44,6 +44,8 @@
   .predict .mypick { color:#8a6d00; font-size:.92rem; min-height:1.2em; }
   .predict .howto { font-size:.92rem; margin:6px 0 0; padding:6px 10px; background:#fff; border:1px dashed #e8cf7d; border-radius:6px; }
   .predict .howto b { color:#8a6d00; }
+  button.preset { background:#fff; color:var(--blue); border:1px solid var(--blue); border-radius:6px; padding:5px 12px; font-size:.9rem; cursor:pointer; }
+  button.preset:hover { background:var(--blue); color:#fff; }
   .gate { margin:28px 0; padding:14px 16px; border:1px dashed #bbb; border-radius:8px; background:#fafafa; color:#666; text-align:center; }
   .predict details { margin-top:6px; }
   .predict summary { cursor:pointer; color:var(--blue); font-weight:600; font-size:.95rem; }
@@ -221,7 +223,8 @@
   <h3>2b. 抽出する人数を増やしていくと</h3>
   <p>今度は n 人を実際に抽出して、その平均身長を計算します。
   下の表に<b>今回実際に選ばれた人</b>が表示されるので、確かに名簿の中の実在の行が選ばれていることを確かめてください。
-  n を増やしていくと、標本平均と母平均 <span id="llnMuLabel"></span>（赤い線）の関係がどう変わるかを観察しましょう。</p>
+  「抽出する」を押すたびに、その標本平均が下のグラフに<b>点として記録</b>されます。n = 10，100，1000 などで何回かずつ押して、
+  点の散らばりと母平均 <span id="llnMuLabel"></span>（赤い線）の関係が n によってどう変わるかを観察しましょう。</p>
   <div class="controls">
     <div class="row">
       <label class="name" for="llnNRange">抽出する人数 n</label>
@@ -230,12 +233,16 @@
         <input type="number" id="llnNNum" min="1" max="3000" step="1" value="10">
         <button type="button" id="llnNPlus">＋</button></span>
     </div>
-    <div class="row"><button class="roll" id="llnRoll">抽出しなおす</button></div>
+    <div class="row"><button class="roll" id="llnRoll">抽出する</button>
+      <button class="nav" id="llnReset">記録を消す</button>
+      <label><input type="checkbox" id="llnTrace" checked> 最新の標本で，1人ずつ増やしたときの平均の推移を重ねる</label></div>
   </div>
   <div class="caption">今回選ばれた人（名簿からの実際の抽出結果）</div>
   <div id="llnSampleTable"></div>
   <div class="readout" id="llnReadout"></div>
-  <div class="caption">抽出した人数を 1 人ずつ増やしながら計算しなおした平均身長の推移（横軸は対数目盛）</div>
+  <div class="caption">記録した標本平均（横軸は抽出した人数 n，対数目盛）：
+    <span style="color:#2b6cb0">●</span> 標本平均　<span style="color:#d9a400">●</span> 最新の標本平均　<span style="color:#d13438">―</span> 母平均
+    <span style="color:#555">- - -</span> 母平均 ± 2σ/√n（標本平均の約95%が入る範囲）　<span style="color:#9bb7d4">―</span> 最新の標本の推移</div>
   <canvas id="llnCanvas" width="780" height="320"></canvas>
 
   <!-- ============ 3. 中心極限定理 ============ -->
@@ -290,7 +297,8 @@
   <p>名簿の男性から n 人を抽出して <b>95%信頼区間</b>を作る、という操作を何本も繰り返します。
   赤い水平線が母平均（名簿の男性5万人全員の平均身長）、縦線が各標本から計算した95%信頼区間で、
   <b>母平均を含む区間は青、含まない区間は赤</b>です。
-  母平均を含む区間が何本あるかを数えて、「95%信頼区間」の「95%」が何を意味しているのかを考えましょう。</p>
+  母平均を含む区間が何本あるかを数えて、「95%信頼区間」の「95%」が何を意味しているのかを考えましょう。
+  n を 10，100，1000 などに変えて、区間の幅がどう変わるかも見てみましょう（縦軸の目盛りは固定しています）。</p>
   <div class="predict">
     <div class="q">予想しよう Q6：95%信頼区間を100本作ったとき，母平均を含む区間は何本くらい？</div>
     <div class="opts">
@@ -308,10 +316,15 @@
   <div class="controls">
     <div class="row">
       <label class="name" for="ciNRange">標本サイズ n</label>
-      <input type="range" id="ciNRange" min="2" max="100" step="1" value="10">
+      <input type="range" id="ciNRange" min="10" max="1000" step="1" value="10">
       <span class="stepper"><button type="button" id="ciNMinus">−</button>
-        <input type="number" id="ciNNum" min="2" max="100" step="1" value="10">
+        <input type="number" id="ciNNum" min="10" max="1000" step="1" value="10">
         <button type="button" id="ciNPlus">＋</button></span>
+    </div>
+    <div class="row"><label class="name">n をすぐ選ぶ</label>
+      <button class="preset ciNp" data-n="10">10</button>
+      <button class="preset ciNp" data-n="30">30</button> <button class="preset ciNp" data-n="100">100</button> <button class="preset ciNp" data-n="300">300</button>
+      <button class="preset ciNp" data-n="1000">1000</button>
     </div>
     <div class="row">
       <label class="name" for="ciKRange">区間の本数</label>
@@ -345,7 +358,7 @@
   <div class="controls">
     <div class="row">
       <button class="roll" id="rmOnce">調査を1回行う（男性 n 人を抽出）</button>
-      <button class="nav" id="rmReveal">答え合わせ（母平均を表示する）</button>
+      <button class="nav after-q" id="rmReveal">答え合わせ（母平均を表示する）</button>
       <button class="nav" id="rmReset">リセット</button>
     </div>
     <p class="caption" style="margin:4px 0 0;">標本サイズ n は上の「標本サイズ n」で設定した値を使います。</p>
@@ -720,25 +733,56 @@ document.getElementById("aReset").addEventListener("click", aReset);
 /* ============ 2. 大数の法則 ============ */
 const llnCanvas = document.getElementById("llnCanvas");
 const llnReadout = document.getElementById("llnReadout");
-function drawLLN() {
-  const n = llnN.get();
-  const idx = sampleFrom(POP.menIdx, n);
+/* 2b: 「抽出する」を押すたびに標本平均を点として記録する（横軸 n は対数目盛） */
+const llnState = { pts: [], last: null };
+function llnSample() {
+  const n = llnN.get(), idx = sampleFrom(POP.menIdx, n);
+  let s = 0; const run = new Array(n);
+  for (let i = 0; i < n; i++) { s += POP.height[idx[i]]; run[i] = s / (i + 1); }
+  llnState.last = { n: n, idx: idx, run: run, m: run[n - 1] };
+  llnState.pts.push({ n: n, m: run[n - 1], j: Math.random() - 0.5 });
+  llnDraw();
+}
+function llnDraw() {
+  const L = llnState.last, mu = POPSTAT.mh, sd = POPSTAT.mhSd, NMAX = 3000, ylo = mu - 13, yhi = mu + 13;
   /* 抽出された人の表（先頭10人まで） */
-  let html = "<table class='roster'>" + rosterHeader();
-  for (let i = 0; i < Math.min(10, n); i++) html += rosterRow(idx[i]);
-  html += "</table>";
-  if (n > 10) html += "<p class='caption'>…ほか " + (n - 10) + " 人（表示は先頭10人のみ）</p>";
+  let html = "";
+  if (L) {
+    html = "<table class='roster'>" + rosterHeader();
+    for (let i = 0; i < Math.min(10, L.n); i++) html += rosterRow(L.idx[i]);
+    html += "</table>";
+    if (L.n > 10) html += "<p class='caption'>…ほか " + (L.n - 10) + " 人（表示は先頭10人のみ）</p>";
+  } else html = "<p class='caption'>「抽出する」を押すと，選ばれた人がここに表示されます</p>";
   document.getElementById("llnSampleTable").innerHTML = html;
-  /* 逐次平均 */
-  let s = 0; const m = new Array(n);
-  for (let i = 0; i < n; i++) { s += POP.height[idx[i]]; m[i] = s / (i + 1); }
   const cv = setupCanvas(llnCanvas), ctx = cv.ctx;
-  const sc = frame(ctx, cv.w, cv.h, [1, Math.max(n, 10), 162, 174], { xlog: true, xfmt: function (t) { return String(t); }, yfmt: function (t) { return String(t); } });
-  ctx.strokeStyle = "#d13438"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sc.x0, sc.sy(POPSTAT.mh)); ctx.lineTo(sc.x1, sc.sy(POPSTAT.mh)); ctx.stroke();
-  ctx.strokeStyle = "#2b6cb0"; ctx.lineWidth = 1.5; ctx.beginPath();
-  for (let i = 0; i < n; i++) { const x = sc.sx(i + 1), y = sc.sy(Math.max(162, Math.min(174, m[i]))); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
-  ctx.stroke();
-  llnReadout.innerHTML = "選ばれた " + n + " 人の平均身長 = <b>" + fmt(m[n - 1]) + " cm</b>　（母平均 = " + POPSTAT.mh.toFixed(1) + " cm）";
+  const sc = frame(ctx, cv.w, cv.h, [0.7, NMAX * 1.4, ylo, yhi], { xlog: true, xfmt: function (t) { return String(t); }, yfmt: function (t) { return fmt(t, 0); } });
+  const clampY = function (v) { return sc.sy(Math.max(ylo, Math.min(yhi, v))); };
+  /* 母平均 ± 2σ/√n */
+  ctx.save(); ctx.strokeStyle = "#555"; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
+  [1, -1].forEach(function (sgn) {
+    ctx.beginPath();
+    for (let i = 0; i <= 200; i++) { const n = Math.pow(NMAX, i / 200), x = sc.sx(n), y = clampY(mu + sgn * 2 * sd / Math.sqrt(n)); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.stroke();
+  });
+  ctx.restore();
+  /* 母平均 */
+  ctx.strokeStyle = "#d13438"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sc.x0, sc.sy(mu)); ctx.lineTo(sc.x1, sc.sy(mu)); ctx.stroke();
+  /* 最新の標本で 1 人ずつ増やしたときの平均の推移 */
+  if (L && document.getElementById("llnTrace").checked) {
+    ctx.strokeStyle = "#9bb7d4"; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let i = 0; i < L.n; i++) { const x = sc.sx(i + 1), y = clampY(L.run[i]); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.stroke();
+  }
+  /* 記録した標本平均（同じ n の点が重ならないよう横に少しずらす） */
+  llnState.pts.forEach(function (pt, i) {
+    const latest = i === llnState.pts.length - 1, x = sc.sx(pt.n) * 1 + pt.j * 8, y = clampY(pt.m);
+    ctx.fillStyle = latest ? "#d9a400" : "rgba(43,108,176,0.6)";
+    ctx.beginPath(); ctx.arc(x, y, latest ? 5 : 3.5, 0, 2 * Math.PI); ctx.fill();
+  });
+  const K = llnState.pts.length;
+  llnReadout.innerHTML = L
+    ? "最新の標本: 選ばれた " + L.n + " 人の平均身長 = <b>" + fmt(L.m) + " cm</b>（母平均 = " + mu.toFixed(1) + " cm，ずれ = " + fmt(L.m - mu) + " cm）　記録した点: " + K + " 個"
+    : "n を決めて「抽出する」を押しましょう。母平均 = " + mu.toFixed(1) + " cm";
 }
 
 /* ============ 2a. 10人 vs 1000人 の対決 ============ */
@@ -845,22 +889,32 @@ Array.prototype.forEach.call(document.querySelectorAll('input[name=cltvar]'), fu
 function drawCI() {
   const n = ciN.get(), K = ciK.get(), mu = POPSTAT.mh;
   const tcrit = qt(0.975, n - 1);
-  const items = new Array(K); let lomin = Infinity, himax = -Infinity, cover = 0;
+  const items = new Array(K); let cover = 0, wsum = 0;
   for (let k = 0; k < K; k++) {
     const idx = sampleFrom(POP.menIdx, n);
     const x = new Array(n); for (let i = 0; i < n; i++) x[i] = POP.height[idx[i]];
     const m = meanOf(x), half = tcrit * sdOf(x) / Math.sqrt(n), lo = m - half, hi = m + half;
     const inside = (lo <= mu && hi >= mu); if (inside) cover++;
-    if (lo < lomin) lomin = lo; if (hi > himax) himax = hi;
+    wsum += hi - lo;
     items[k] = { lo: lo, hi: hi, in: inside };
   }
-  const pad = (himax - lomin) * 0.05;
+  /* 縦軸は n によらず固定する（n を変えたときに区間の幅の違いが見えるように） */
+  const ylo = Math.round(mu) - 12, yhi = Math.round(mu) + 12;
   const cv = setupCanvas(document.getElementById("ciCanvas")), ctx = cv.ctx;
-  const sc = frame(ctx, cv.w, cv.h, [0.5, K + 0.5, lomin - pad, himax + pad], { xfmt: function (t) { return fmt(t, 0); }, yfmt: function (t) { return fmt(t, 0); } });
+  const sc = frame(ctx, cv.w, cv.h, [0.5, K + 0.5, ylo, yhi], { xfmt: function (t) { return fmt(t, 0); }, yfmt: function (t) { return fmt(t, 0); } });
+  const tri = function (x, y, up) { ctx.beginPath(); ctx.moveTo(x, y + (up ? -6 : 6)); ctx.lineTo(x - 4, y); ctx.lineTo(x + 4, y); ctx.closePath(); ctx.fill(); };
   ctx.strokeStyle = "#d13438"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(sc.x0, sc.sy(mu)); ctx.lineTo(sc.x1, sc.sy(mu)); ctx.stroke();
   ctx.lineWidth = K > 120 ? 1 : 1.6;
-  for (let k = 0; k < K; k++) { const d = items[k], x = sc.sx(k + 1); ctx.strokeStyle = d.in ? "#2b6cb0" : "#d13438"; ctx.beginPath(); ctx.moveTo(x, sc.sy(d.lo)); ctx.lineTo(x, sc.sy(d.hi)); ctx.stroke(); }
-  document.getElementById("ciReadout").innerHTML = "母平均(" + mu.toFixed(1) + "cm)を含む区間 = <b>" + cover + " / " + K + "</b>　（95%区間なので理論上は約 " + Math.round(K * 0.95) + " 本）";
+  let clipped = 0;
+  for (let k = 0; k < K; k++) {
+    const d = items[k], x = sc.sx(k + 1), col = d.in ? "#2b6cb0" : "#d13438";
+    ctx.strokeStyle = col; ctx.fillStyle = col;
+    ctx.beginPath(); ctx.moveTo(x, sc.sy(Math.max(ylo, d.lo))); ctx.lineTo(x, sc.sy(Math.min(yhi, d.hi))); ctx.stroke();
+    if (d.hi > yhi) { tri(x, sc.sy(yhi), true); clipped++; }
+    if (d.lo < ylo) { tri(x, sc.sy(ylo), false); clipped++; }
+  }
+  document.getElementById("ciReadout").innerHTML = "母平均(" + mu.toFixed(1) + "cm)を含む区間 = <b>" + cover + " / " + K + "</b>　（95%区間なので理論上は約 " + Math.round(K * 0.95) + " 本）<br>" +
+    "n = " + n + " のときの区間の幅の平均 = <b>" + fmt(wsum / K, 2) + " cm</b>" + (clipped ? "（グラフの上下の端を超える区間は，端で切って三角の印を付けています）" : "");
 }
 
 /* ============ 4b. 研究者の視点 ============ */
@@ -938,13 +992,16 @@ function wirePredicts() {
 }
 
 /* ============ コントロール結線・初期描画 ============ */
-const llnN = linkNumeric("llnN", drawLLN);
+const llnN = linkNumeric("llnN", llnDraw);
 const cltN = linkNumeric("cltN", drawCLT);
 const cltReps = linkNumeric("cltReps", drawCLT);
 const ciN = linkNumeric("ciN", drawCI);
 const ciK = linkNumeric("ciK", drawCI);
+Array.prototype.forEach.call(document.querySelectorAll(".ciNp"), function (b) { b.addEventListener("click", function () { ciN.set(+b.dataset.n); drawCI(); }); });
 
-document.getElementById("llnRoll").addEventListener("click", drawLLN);
+document.getElementById("llnRoll").addEventListener("click", llnSample);
+document.getElementById("llnReset").addEventListener("click", function () { llnState.pts = []; llnState.last = null; llnDraw(); });
+document.getElementById("llnTrace").addEventListener("change", llnDraw);
 document.getElementById("cltRoll").addEventListener("click", drawCLT);
 document.getElementById("ciRoll").addEventListener("click", drawCI);
 document.getElementById("duelOnce").addEventListener("click", function () { duelRun(1); });
@@ -959,18 +1016,36 @@ document.getElementById("llnMuLabel").textContent = POPSTAT.mh.toFixed(1) + " cm
 
 wirePredicts();
 drawRoster(); drawPopSummary(); drawPopHist();
-aDraw(); drawLLN(); duelDraw(); drawCLT(); drawCI(); rmDraw();
+aDraw(); llnDraw(); duelDraw(); drawCLT(); drawCI(); rmDraw();
 
-/* ============ 授業モード: ?upto=節番号 までの節だけを表示する ============ */
+/* ============ 授業モード: ?upto=節番号 までの節だけを表示する ============
+   節の中で2問目以降の設問がある小節（例: 4b）は，?upto=4 では操作だけを表示し，
+   設問と class="after-q" の要素（答え合わせのボタンなど）を隠す。?upto=4b で設問も表示する。 */
 (function () {
-  const m = /[?&]upto=(\d+)/.exec(location.search);
+  const m = /[?&]upto=(\d+)([a-z]?)/.exec(location.search);
   if (!m) return;
-  const upto = parseInt(m[1], 10);
-  const wrap = document.querySelector(".wrap");
-  let sec = -Infinity, hidden = 0, target = null;
-  Array.prototype.forEach.call(wrap.children, function (el) {
-    if (el.tagName === "H2") { const n = parseInt(el.textContent, 10); if (!isNaN(n)) { sec = n; if (n === upto) target = el; } }
-    if (sec > upto) { el.style.display = "none"; hidden++; }
+  const upto = parseInt(m[1], 10), sub = m[2] || "";
+  const wrap = document.querySelector(".wrap"), kids = Array.prototype.slice.call(wrap.children);
+  let sec = -Infinity, letter = "", seenQ = false, split = false, hidden = 0, target = null;
+  kids.forEach(function (el, i) {
+    if (el.tagName === "H2") {
+      const n = parseInt(el.textContent, 10);
+      if (!isNaN(n)) { sec = n; letter = ""; seenQ = false; split = false; if (n === upto && !sub) target = el; }
+    } else if (el.tagName === "H3") {
+      const mm = /^(\d+)([a-z])\./.exec(el.textContent.trim());
+      letter = mm ? mm[2] : "";
+      let hasQ = false;
+      for (let j = i + 1; j < kids.length && kids[j].tagName !== "H2" && kids[j].tagName !== "H3"; j++) if (kids[j].classList.contains("predict")) hasQ = true;
+      split = hasQ && seenQ;
+      if (sec === upto && sub && letter === sub) target = el;
+    }
+    let hide = sec > upto;
+    if (sec === upto && split && !(sub && letter && letter <= sub)) {
+      if (el.classList.contains("predict")) hide = true;
+      Array.prototype.forEach.call(el.querySelectorAll(".after-q"), function (b) { b.style.display = "none"; });
+    }
+    if (el.classList.contains("predict")) seenQ = true;
+    if (hide) { el.style.display = "none"; hidden++; }
   });
   if (hidden) wrap.insertAdjacentHTML("beforeend", "<div class='gate'>この先は，授業の進行に合わせて表示されます。</div>");
   if (target) setTimeout(function () { target.scrollIntoView(); }, 0);

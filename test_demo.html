@@ -999,16 +999,34 @@ vDraw();
 ciDraw();
 $("eNRange").value = 2; eDraw();
 
-/* ============ 授業モード: ?upto=節番号 までの節だけを表示する ============ */
+/* ============ 授業モード: ?upto=節番号 までの節だけを表示する ============
+   節の中で2問目以降の設問がある小節（例: 4b）は，?upto=4 では操作だけを表示し，
+   設問と class="after-q" の要素（答え合わせのボタンなど）を隠す。?upto=4b で設問も表示する。 */
 (function () {
-  const m = /[?&]upto=(\d+)/.exec(location.search);
+  const m = /[?&]upto=(\d+)([a-z]?)/.exec(location.search);
   if (!m) return;
-  const upto = parseInt(m[1], 10);
-  const wrap = document.querySelector(".wrap");
-  let sec = -Infinity, hidden = 0, target = null;
-  Array.prototype.forEach.call(wrap.children, function (el) {
-    if (el.tagName === "H2") { const n = parseInt(el.textContent, 10); if (!isNaN(n)) { sec = n; if (n === upto) target = el; } }
-    if (sec > upto) { el.style.display = "none"; hidden++; }
+  const upto = parseInt(m[1], 10), sub = m[2] || "";
+  const wrap = document.querySelector(".wrap"), kids = Array.prototype.slice.call(wrap.children);
+  let sec = -Infinity, letter = "", seenQ = false, split = false, hidden = 0, target = null;
+  kids.forEach(function (el, i) {
+    if (el.tagName === "H2") {
+      const n = parseInt(el.textContent, 10);
+      if (!isNaN(n)) { sec = n; letter = ""; seenQ = false; split = false; if (n === upto && !sub) target = el; }
+    } else if (el.tagName === "H3") {
+      const mm = /^(\d+)([a-z])\./.exec(el.textContent.trim());
+      letter = mm ? mm[2] : "";
+      let hasQ = false;
+      for (let j = i + 1; j < kids.length && kids[j].tagName !== "H2" && kids[j].tagName !== "H3"; j++) if (kids[j].classList.contains("predict")) hasQ = true;
+      split = hasQ && seenQ;
+      if (sec === upto && sub && letter === sub) target = el;
+    }
+    let hide = sec > upto;
+    if (sec === upto && split && !(sub && letter && letter <= sub)) {
+      if (el.classList.contains("predict")) hide = true;
+      Array.prototype.forEach.call(el.querySelectorAll(".after-q"), function (b) { b.style.display = "none"; });
+    }
+    if (el.classList.contains("predict")) seenQ = true;
+    if (hide) { el.style.display = "none"; hidden++; }
   });
   if (hidden) wrap.insertAdjacentHTML("beforeend", "<div class='gate'>この先は，授業の進行に合わせて表示されます。</div>");
   if (target) setTimeout(function () { target.scrollIntoView(); }, 0);
