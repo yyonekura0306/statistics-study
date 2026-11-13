@@ -44,6 +44,7 @@
   .predict .mypick { color:#8a6d00; font-size:.92rem; min-height:1.2em; }
   .predict .howto { font-size:.92rem; margin:6px 0 0; padding:6px 10px; background:#fff; border:1px dashed #e8cf7d; border-radius:6px; }
   .predict .howto b { color:#8a6d00; }
+  .before-q { display:none; }  /* 授業用の表示で，設問の前だけ見せる文（?upto= の切り替えで表示する） */
   .gate { margin:28px 0; padding:14px 16px; border:1px dashed #bbb; border-radius:8px; background:#fafafa; color:#666; text-align:center; }
   .predict details { margin-top:6px; }
   .predict summary { cursor:pointer; color:var(--blue); font-weight:600; font-size:.95rem; }
@@ -1036,6 +1037,7 @@ eTTable(); eTDraw();
     if (sec === upto && split && !(sub && letter && letter <= sub)) {
       if (el.classList.contains("predict")) hide = true;
       Array.prototype.forEach.call(el.querySelectorAll(".after-q"), function (b) { b.style.display = "none"; });
+      Array.prototype.forEach.call(el.querySelectorAll(".before-q"), function (b) { b.style.display = "inline"; });
     }
     if (el.classList.contains("predict")) seenQ = true;
     if (hide) { el.style.display = "none"; hidden++; }

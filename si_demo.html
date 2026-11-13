@@ -46,6 +46,7 @@
   .predict .howto b { color:#8a6d00; }
   button.preset { background:#fff; color:var(--blue); border:1px solid var(--blue); border-radius:6px; padding:5px 12px; font-size:.9rem; cursor:pointer; }
   button.preset:hover { background:var(--blue); color:#fff; }
+  .before-q { display:none; }  /* 授業用の表示で，設問の前だけ見せる文（?upto= の切り替えで表示する） */
   .gate { margin:28px 0; padding:14px 16px; border:1px dashed #bbb; border-radius:8px; background:#fafafa; color:#666; text-align:center; }
   .predict details { margin-top:6px; }
   .predict summary { cursor:pointer; color:var(--blue); font-weight:600; font-size:.95rem; }
@@ -339,8 +340,8 @@
   <div class="readout" id="ciReadout"></div>
 
   <h3>4b. 研究者の視点 — あなたには1本しか見えない</h3>
-  <p>上の図は、母集団も100本の答え合わせも見える<b>「神の視点」</b>でした。しかし現実の研究者が体験できるのは、このうちの<b>たった1回分</b>です。
-  「調査を1回行う」を押して、自分の調査の95%信頼区間を作ってみましょう。<b>母平均の赤い線は表示されません</b>——現実の研究では母平均は見えないからです。</p>
+  <p><span class="after-q">上の図は、母集団も100本の答え合わせも見える<b>「神の視点」</b>でした。しかし現実の研究者が体験できるのは、このうちの<b>たった1回分</b>です。
+  「調査を1回行う」を押して、自分の調査の95%信頼区間を作ってみましょう。<b>母平均の赤い線は表示されません</b>——現実の研究では母平均は見えないからです。</span><span class="before-q">「調査を1回行う」を押して、自分の調査の95%信頼区間を1本作ってみましょう。</span></p>
   <div class="predict">
     <div class="q">予想しよう Q7：いまあなたが作った1本の区間は，母平均を含んでいるでしょうか？</div>
     <div class="opts">
@@ -941,7 +942,7 @@ function rmDraw() {
   }
   const ro = document.getElementById("rmReadout");
   if (K === 0) ro.innerHTML = "まだ調査をしていません。「調査を1回行う」を押してみましょう。";
-  else if (!rmState.revealed) ro.innerHTML = "これまでの調査: <b>" + K + " 回</b>。最新の95%信頼区間 = <b>" + fmt(rmState.items[K - 1].lo, 1) + " 〜 " + fmt(rmState.items[K - 1].hi, 1) + " cm</b>。この区間が母平均を含むかどうか，この画面からは確かめられません。";
+  else if (!rmState.revealed) ro.innerHTML = "これまでの調査: <b>" + K + " 回</b>。最新の95%信頼区間 = <b>" + fmt(rmState.items[K - 1].lo, 1) + " 〜 " + fmt(rmState.items[K - 1].hi, 1) + " cm</b>。" + (document.getElementById("rmReveal").style.display === "none" ? "" : "この区間が母平均を含むかどうか，この画面からは確かめられません。");  /* Q7の設問の前（授業用の ?upto=4）は答えにつながる文を出さない */
   else ro.innerHTML = "答え合わせ: <b>" + K + " 本中 " + cover + " 本</b>が母平均（" + mu.toFixed(1) + " cm）を含んでいました。現実の研究では，この答え合わせは決してできません。";
 }
 function rmOnce() {
@@ -1043,6 +1044,7 @@ aDraw(); llnDraw(); duelDraw(); drawCLT(); drawCI(); rmDraw();
     if (sec === upto && split && !(sub && letter && letter <= sub)) {
       if (el.classList.contains("predict")) hide = true;
       Array.prototype.forEach.call(el.querySelectorAll(".after-q"), function (b) { b.style.display = "none"; });
+      Array.prototype.forEach.call(el.querySelectorAll(".before-q"), function (b) { b.style.display = "inline"; });
     }
     if (el.classList.contains("predict")) seenQ = true;
     if (hide) { el.style.display = "none"; hidden++; }
