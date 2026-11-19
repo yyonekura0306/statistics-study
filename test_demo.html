@@ -481,28 +481,44 @@
 
   <!-- ============ 7. 信頼区間と検定 ============ -->
   <h2>7. 信頼区間と検定の対応</h2>
-  <p>講義スライドの10人の得点データ（61, 74, 55, 85, 68, 72, 64, 80, 82, 59）で、帰無仮説「母平均 = μ<sub>0</sub>」の1標本 t 検定を行います。
-  μ<sub>0</sub> を動かして、<b>P値と95%信頼区間の関係</b>を確かめましょう。</p>
+  <p>新しい非接触体温計を導入する前に、患者10人を新しい体温計と従来の体温計で続けて測り、その差（新しい − 従来、℃）を記録しました
+  （0.3, −0.1, 0.4, 0.2, −0.2, 0.5, 0.1, 0.0, 0.4, −0.1）。新しい体温計に<b>かたより</b>がなければ、差の平均は 0 ℃ になるはずです。
+  帰無仮説「差の平均 = μ<sub>0</sub>」の1標本 t 検定を行います。μ<sub>0</sub> を動かして、<b>P値と95%信頼区間の関係</b>を確かめましょう。</p>
   <div class="predict">
-    <div class="q">予想しよう Q9：このデータの95%信頼区間は [62.6, 77.4] です。帰無仮説「母平均 = 65点」を5%水準で検定すると？</div>
+    <div class="q">予想しよう Q9：患者10人を新しい体温計と従来の体温計で測った差（新しい − 従来）の平均は 0.15 ℃，95%信頼区間は [−0.03, 0.33] ℃ です。「かたよりなし（差の平均 = 0 ℃）」を5%水準で検定すると？</div>
     <div class="opts">
-      <label><input type="radio" name="q9" value="1"> 有意になる（65点は平均70点と違うから）</label>
+      <label><input type="radio" name="q9" value="1"> 有意になる（差の平均は0.15 ℃で，0ではないから）</label>
       <label><input type="radio" name="q9" value="2"> 有意にならない</label>
       <label><input type="radio" name="q9" value="3"> t値を計算しないと分からない</label>
     </div>
     <div class="mypick" id="q9pick"></div>
     <span id="q9clicker"></span>
-    <div class="howto"><b>確かめ方：</b>下の「帰無仮説の値 μ<sub>0</sub>」を 65 にして，P値を見ます。</div>
+    <div class="howto"><b>確かめ方：</b>下の「帰無仮説の値 μ<sub>0</sub>」を 0 にして，P値を見ます。</div>
     <details><summary>解説（動かして確かめてから開こう）</summary>
-      <p>答えは「有意にならない」（p = 0.16）。65点は95%信頼区間の中にあるので，5%水準の両側検定では棄却されません。<b>μ<sub>0</sub> が95%信頼区間の外にあるときだけ p &lt; 0.05 になり</b>，区間の端ではちょうど p = 0.05 です。下のグラフで，P値の曲線が0.05の線より上にある範囲が，そのまま95%信頼区間になっていることを確かめましょう。信頼区間は「検定で棄却されない μ<sub>0</sub> の範囲」とも言えます。</p>
+      <p>答えは「有意にならない」（p = 0.086）。0 ℃ は95%信頼区間の中にあるので，5%水準の両側検定では棄却されません。<b>μ<sub>0</sub> が95%信頼区間の外にあるときだけ p &lt; 0.05 になり</b>，区間の端ではちょうど p = 0.05 です。下のグラフで，P値の曲線が0.05の線より上にある範囲が，そのまま95%信頼区間になっていることを確かめましょう。信頼区間は「検定で棄却されない μ<sub>0</sub> の範囲」とも言えます。</p>
+    </details>
+  </div>
+  <div class="predict">
+    <div class="q">予想しよう Q10：差の平均 0.15 ℃，95%信頼区間 [−0.03, 0.33] ℃ という結果から言えることは？</div>
+    <div class="opts">
+      <label><input type="radio" name="q10" value="1"> かたよりがないことが示された</label>
+      <label><input type="radio" name="q10" value="2"> データと矛盾しないかたよりは −0.03〜0.33 ℃ の範囲（0 ℃ もありうるし，0.3 ℃ もありうる）</label>
+      <label><input type="radio" name="q10" value="3"> 新しい体温計は 0.15 ℃ 高く測る</label>
+    </div>
+    <div class="mypick" id="q10pick"></div>
+    <span id="q10clicker"></span>
+    <div class="howto"><b>確かめ方：</b>下の「帰無仮説の値 μ<sub>0</sub>」を 0，0.1，0.2，0.3 と動かし，どの値でも有意にならない（データと矛盾しない）ことを確かめます。</div>
+    <details><summary>解説（動かして確かめてから開こう）</summary>
+      <p>答えは「データと矛盾しないかたよりは −0.03〜0.33 ℃ の範囲」。有意にならなかったのは，「かたよりは 0 ℃」と考えてもデータと矛盾しない，というだけです。同じように，0.1 ℃ でも 0.3 ℃ でもデータと矛盾しません。<b>「有意差なし」は「かたよりなし」の証明ではありません</b>（4節で見たように，人数が少ないと，本当の差があっても有意になりにくくなります）。</p>
+      <p>0.3 ℃ のかたよりは，発熱かどうかの判断に影響しうる大きさです。導入するかどうかは，0 を含むかどうかではなく，<b>信頼区間の範囲全体が臨床的に許容できるか</b>で考えます。人数を増やせば区間は狭くなります（実際に機器を比べる研究では，もっと多くの人で測ります）。また，「0.15 ℃ 高く測る」とも言い切れません。0.15 ℃ は今回の10人から計算した推定値で，別の10人で測れば変わります。</p>
     </details>
   </div>
   <div class="controls">
     <div class="row">
-      <label class="name" for="ciMu0Range">帰無仮説の値 μ<sub>0</sub></label>
-      <input type="range" id="ciMu0Range" min="50" max="90" step="0.1" value="60">
+      <label class="name" for="ciMu0Range">帰無仮説の値 μ<sub>0</sub>（℃）</label>
+      <input type="range" id="ciMu0Range" min="-0.5" max="0.8" step="0.01" value="0.4">
       <span class="stepper"><button type="button" id="ciMu0Minus">−</button>
-        <input type="number" id="ciMu0Num" min="50" max="90" step="0.1" value="60">
+        <input type="number" id="ciMu0Num" min="-0.5" max="0.8" step="0.01" value="0.4">
         <button type="button" id="ciMu0Plus">＋</button></span>
     </div>
     <div class="row"><label class="name">有意水準（信頼度）</label>
@@ -512,7 +528,7 @@
       </span></div>
   </div>
   <div class="readout" id="ciReadout"></div>
-  <div class="caption">データ（灰色の点）・信頼区間（青）・μ<sub>0</sub>（赤）</div>
+  <div class="caption">10人の差（灰色の点，℃）・差の平均と信頼区間（青）・μ<sub>0</sub>（赤）</div>
   <canvas id="ciCanvas" width="780" height="130"></canvas>
   <div class="caption">μ<sub>0</sub> をいろいろ変えたときのP値（青の範囲が信頼区間）</div>
   <canvas id="ciPCanvas" width="780" height="260"></canvas>
@@ -522,14 +538,14 @@
   <p>男性を2群に分けて平均身長を比べ、<b>標本で δ cm の差が観察された</b>とします（男性の身長の標準偏差は約7.1 cm）。
   差の大きさ δ と各群の人数 n を変えて、P値と効果量（Cohen's d = 差 ÷ 標準偏差）がどう変わるかを比べましょう。</p>
   <div class="predict">
-    <div class="q">予想しよう Q10：観察された差がわずか 0.5 cm（d = 0.07）のとき，各群何人以上いれば p &lt; 0.05 になる？</div>
+    <div class="q">予想しよう Q11：観察された差がわずか 0.5 cm（d = 0.07）のとき，各群何人以上いれば p &lt; 0.05 になる？</div>
     <div class="opts">
-      <label><input type="radio" name="q10" value="1"> どれだけ人数を増やしても有意にならない</label>
-      <label><input type="radio" name="q10" value="2"> 各群 約1,500人以上</label>
-      <label><input type="radio" name="q10" value="3"> 各群 約100人以上</label>
+      <label><input type="radio" name="q11" value="1"> どれだけ人数を増やしても有意にならない</label>
+      <label><input type="radio" name="q11" value="2"> 各群 約1,500人以上</label>
+      <label><input type="radio" name="q11" value="3"> 各群 約100人以上</label>
     </div>
-    <div class="mypick" id="q10pick"></div>
-    <span id="q10clicker"></span>
+    <div class="mypick" id="q11pick"></div>
+    <span id="q11clicker"></span>
     <div class="howto"><b>確かめ方：</b>下の「観察された差 δ（cm）」を 0.5 にして，「各群の人数 n」を少しずつ増やし，P値が 0.05 を下回る人数を探します。</div>
     <details><summary>解説（動かして確かめてから開こう）</summary>
       <p>答えは「各群 約1,500人以上」（正確には1,545人）。どんなに小さな差でも，人数を増やせばP値はいくらでも小さくなります。逆に，5 cm（d = 0.7）の大きな差でも各群5人なら有意になりません。<b>P値は差の大きさではなく，「差の大きさ」と「人数」の両方で決まります</b>。一方，効果量 d は人数を変えても変わりません。結果を報告するときは，P値だけでなく，差の大きさ（効果量）と信頼区間を示し，その差が臨床的に意味のある大きさかを考えましょう（ASA声明の原則5）。</p>
@@ -591,8 +607,9 @@ const CLICKER = {
   q6: "",  // Q6 3kgの効果・各群20人の検出力
   q7: "",  // Q7 有意な結果のうち本当に効果がある割合
   q8: "",  // Q8 評価項目を10個検定すると（検定の多重性）
-  q9: "",  // Q9 信頼区間と検定
-  q10: ""   // Q10 小さな差が有意になる人数
+  q9: "",  // Q9 信頼区間と検定（体温計のかたより）
+  q10: "",  // Q10 信頼区間の読み方（体温計のかたより）
+  q11: ""   // Q11 小さな差が有意になる人数
 };
 
 /* ============ 乱数 ============ */
@@ -1125,21 +1142,22 @@ onRadio("mK", mReset);
 mDraw();
 
 /* ============ 7. 信頼区間と検定 ============ */
-const CI_DATA = [61, 74, 55, 85, 68, 72, 64, 80, 82, 59];
+const CI_DATA = [0.3, -0.1, 0.4, 0.2, -0.2, 0.5, 0.1, 0.0, 0.4, -0.1];  /* 体温計の差（新しい − 従来，℃） */
 function ciDraw() {
   const mu0 = ciMu0.get(), alpha = +radioVal("ciAlpha"), n = CI_DATA.length;
   const m = meanOf(CI_DATA), s = sdOf(CI_DATA), se = s / Math.sqrt(n), df = n - 1, tc = qt(1 - alpha / 2, df);
   const lo = m - tc * se, hi = m + tc * se, t = (m - mu0) / se, p = pTwoSidedT(t, df), rej = p < alpha, inside = mu0 >= lo && mu0 <= hi;
   const lv = Math.round((1 - alpha) * 100);
-  $("ciReadout").innerHTML = "平均 = " + fmt(m, 1) + "，不偏標準偏差 = " + fmt(s) + "，標準誤差 = " + fmt(se) + "，" + lv + "%信頼区間 = <b>[" + fmt(lo, 2) + ", " + fmt(hi, 2) + "]</b><br>" +
-    "<span class='big'>μ<sub>0</sub> = " + fmt(mu0, 1) + "：t = (" + fmt(m, 1) + " − " + fmt(mu0, 1) + ") ÷ " + fmt(se) + " = " + fmt(t, 3) + "，P値 = <b>" + p.toFixed(4) + "</b></span>　" +
+  $("ciReadout").innerHTML = "差の平均 = " + fmt(m, 2) + " ℃，不偏標準偏差 = " + fmt(s, 3) + "，標準誤差 = " + fmt(se, 3) + "，" + lv + "%信頼区間 = <b>[" + fmt(lo, 2) + ", " + fmt(hi, 2) + "] ℃</b><br>" +
+    "<span class='big'>μ<sub>0</sub> = " + fmt(mu0, 2) + " ℃：t = (" + fmt(m, 2) + " − " + fmt(mu0, 2) + ") ÷ " + fmt(se, 3) + " = " + fmt(t, 3) + "，P値 = <b>" + p.toFixed(4) + "</b></span>　" +
     "<span class='verdict " + (rej ? "rej" : "acc") + "'>" + (rej ? "有意（棄却）" : "有意でない") + "</span>　μ<sub>0</sub> は信頼区間の" + (inside ? "<b>内側</b>" : "<b>外側</b>") +
-    "<div class='formula'>R: t.test(c(" + CI_DATA.join(", ") + "), mu = " + fmt(mu0, 1) + (alpha !== 0.05 ? ", conf.level = " + (1 - alpha) : "") + ")</div>";
-  const xlo = 50, xhi = 90;
+    "<div class='formula'>R: t.test(c(" + CI_DATA.join(", ") + "), mu = " + fmt(mu0, 2) + (alpha !== 0.05 ? ", conf.level = " + (1 - alpha) : "") + ")</div>";
+  const xlo = -0.5, xhi = 0.8;
   let cv = setupCanvas($("ciCanvas")), ctx = cv.ctx;
   let sc = frame(ctx, cv.w, cv.h, [xlo, xhi, 0, 1], { noY: true, xfmt: function (t) { return trimNum(t); } });
   ctx.fillStyle = "rgba(138,138,138,0.8)";
-  CI_DATA.forEach(function (x, i) { ctx.beginPath(); ctx.arc(sc.sx(x), sc.sy(0.25 + (i % 2) * 0.12), 5, 0, 2 * Math.PI); ctx.fill(); });
+  const seen = {};  /* 同じ値の点は縦に積む */
+  CI_DATA.forEach(function (x) { const c = seen[x] = (seen[x] || 0) + 1; ctx.beginPath(); ctx.arc(sc.sx(x), sc.sy(0.18 + (c - 1) * 0.16), 5, 0, 2 * Math.PI); ctx.fill(); });
   ctx.strokeStyle = "#2b6cb0"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(sc.sx(lo), sc.sy(0.72)); ctx.lineTo(sc.sx(hi), sc.sy(0.72)); ctx.stroke();
   ctx.fillStyle = "#2b6cb0"; ctx.beginPath(); ctx.arc(sc.sx(m), sc.sy(0.72), 6, 0, 2 * Math.PI); ctx.fill();
   vline(ctx, sc, mu0, "#d13438", null, 2);
